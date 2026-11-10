@@ -33,7 +33,7 @@
 | Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
-| Mesa (PowerVR Vulkan + Zink) | ✅/🔧 | Mesa 26.3.0 in /opt: Zink GL 3.2 core+compat, GLES 3.1 on the GPU (GBM); KDE session not yet on it |
+| Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
 | Half-Life 2 | ⏳ | |
 | Rollback how-to tested | ⏳ | |
 
@@ -252,6 +252,39 @@ Changes on the board needed for the KDE session (all in their own files, delete 
   `CCACHE: DataError` once at boot; `i2c i2c-7: of_i2c: modalias failure ... controller/ports`
   (harmless, the DDC bus works: EDID is read).
 
+## Phase B result: KDE on the PowerVR GPU (2026-11-10 22:53) ✅
+
+![KDE on PowerVR](shots/phase-b-kde-fastfetch-powervr.png)
+
+kwin: `OpenGL renderer string: zink Vulkan 1.2(PowerVR B-Series BXE-4-32 MC1 (IMAGINATION_OPEN_SOURCE_MESA))`,
+`OpenGL version string: 3.2 (Core Profile) Mesa 26.3.0` (`qdbus6 org.kde.KWin /KWin supportInformation`).
+The green specks of the llvmpipe/dumb-buffer setup are gone.
+
+How the rendering is wired (important for later sessions):
+
+- The DRM card numbers change per boot (powervr vs verisilicon load order). Always use
+  `/dev/dri/by-path/platform-29400000.display-card` (DC8200) and
+  `/dev/dri/by-path/platform-18000000.gpu-{card,render}` (PowerVR).
+- kwin only uses the display card (`KWIN_DRM_DEVICES=<display-card>`); kwin ignores the PowerVR
+  card (no KMS outputs). EGL/GBM on the display card loads driver name `verisilicon` →
+  `/opt/mesa-jh7110/lib/dri/verisilicon_dri.so` (symlink to libdril_dri.so) → gallium has no
+  `verisilicon` driver → **kmsro** fallback → **Zink renderonly** on the PowerVR Vulkan device,
+  scanout buffers are dumb (CMA) buffers on the display card.
+- `MESA_LOADER_DRIVER_OVERRIDE=zink` must **not** be set for kwin (then Zink opens the display
+  card directly, finds no Vulkan device for it and falls back to softpipe).
+- `kwin_wayland` has file capability `cap_sys_nice=ep` → glibc secure mode → `LD_LIBRARY_PATH`
+  ignored → Debian libgbm + our backend → "libgallium-26.3.0.so: cannot open". Removed with
+  `sudo setcap -r /usr/bin/kwin_wayland` (undo: `sudo dpkg-reconfigure kwin-wayland`).
+  `libcap2-bin` was installed for getcap/setcap.
+- Session environment: `~/.config/plasma-workspace/env/jh7110-mesa.sh`:
+  ```sh
+  . /opt/mesa-jh7110/env.sh
+  unset MESA_LOADER_DRIVER_OVERRIDE
+  export KWIN_DRM_DEVICES=/dev/dri/by-path/platform-29400000.display-card
+  ```
+  plus `jh7110-kwin.sh` (`KWIN_DRM_NO_AMS=1`, still needed).
+- Firmware deb rev 2 has an initramfs hook (powervr probes from the initramfs at ~8 s).
+
 ## Rollback to stock Debian 13
 
 *(to be written and tested in step 8)*. Expected outline:
@@ -285,6 +318,11 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 22:53**: ✅ **KDE Plasma composited on the PowerVR GPU** (Zink via kmsro). Steps that
+  failed first: `KWIN_DRM_DEVICES=card1:card0` (card numbers swap per boot; kwin ignores the
+  non-KMS powervr card), kwin cap_sys_nice → LD_LIBRARY_PATH ignored, `MESA_LOADER_DRIVER_OVERRIDE=zink`
+  → softpipe. Working: verisilicon_dri.so → kmsro → zink renderonly (see *Phase B result*).
+  Restarting sddm while the old session is still shutting down leaves no session: reboot instead.
 - **2026-11-10 22:30**: ✅ **GPU works.** Kernel 7.4.0-rc1-2 boots with `Using XPbmtUC bit 32`.
   powervr probes from the initramfs *before* the root fs is there → firmware -2. After
   `modprobe -r powervr; modprobe powervr`: "loaded firmware powervr/rogue_36.50.54.182_v1.fw, FW

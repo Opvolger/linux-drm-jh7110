@@ -9,7 +9,7 @@ COMMIT=8a58f81883f7be458daa34e418cc4079f995b279
 FW=rogue_36.50.54.182_v1.fw
 SHA=59127d3a02e48876310a520b7dc355f7430d3748d2940caaa33f39237d517abb
 URL=https://gitlab.freedesktop.org/imagination/linux-firmware/-/raw/$COMMIT
-VER=1.1+git8a58f818-1
+VER=1.1+git8a58f818-2
 
 D=$ROOT/firmware
 mkdir -p "$D/powervr"
@@ -18,10 +18,23 @@ mkdir -p "$D/powervr"
 echo "$SHA  $D/powervr/$FW" | sha256sum -c -
 
 P=$(mktemp -d)
+chmod 755 "$P"
 trap 'rm -rf "$P"' EXIT
 install -D -m644 "$D/powervr/$FW" "$P/lib/firmware/powervr/$FW"
 install -D -m644 "$D/LICENSE.powervr" "$P/usr/share/doc/powervr-firmware-jh7110/copyright"
+# powervr.ko is in the initramfs (Debian's MODULES=most) and probes before the root fs is
+# mounted; its MODULE_FIRMWARE list doesn't name this file, so add it to the initramfs.
+install -D -m755 /dev/stdin "$P/usr/share/initramfs-tools/hooks/powervr-firmware-jh7110" <<'HOOK'
+#!/bin/sh
+[ "$1" = prereqs ] && exit 0
+. /usr/share/initramfs-tools/hook-functions
+copy_file firmware /lib/firmware/powervr/rogue_36.50.54.182_v1.fw
+HOOK
 mkdir -p "$P/DEBIAN"
+for s in postinst postrm; do
+	printf '#!/bin/sh\nset -e\nif command -v update-initramfs >/dev/null; then update-initramfs -u -k all; fi\n' > "$P/DEBIAN/$s"
+	chmod 755 "$P/DEBIAN/$s"
+done
 cat > "$P/DEBIAN/control" <<EOF
 Package: powervr-firmware-jh7110
 Version: $VER
