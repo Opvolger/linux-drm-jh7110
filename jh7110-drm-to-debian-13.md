@@ -34,7 +34,7 @@
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
-| Half-Life 2 | 🔧 | DXVK build: needs Vulkan 1.3 ❌; ToGL build starts on Zink/PowerVR, hangs at "Loading..." (ZINK vkEndCommandBuffer VK_ERROR_INITIALIZATION_FAILED) |
+| Half-Life 2 | ✅/🔧 | ToGL build in-game on Zink/PowerVR (`d1_canals_01`, HUD + world) with Mesa patch 0002; picture partly black, to check |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -318,6 +318,16 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 23:48**: ✅ **HL2 in-game on the GPU** (`shots/phase-b-hl2-ingame-first.png`). Root cause
+  of the hang: `strace -f -Z -e trace=ioctl` → `DRM_IOCTL_PVR_CREATE_HWRT_DATASET = -1 ENOSPC`. The
+  kernel's `pvr_fw_object_create()` runs out of the **16 MB MIPS firmware heap**
+  (`ROGUE_FW_HEAP_MIPS_SHIFT 24`): with dynamic rendering (used by Zink) Mesa's pvr driver creates a
+  new HWRT dataset (+ its own local free list, both FW objects) for **every vkCmdBeginRendering**, kept
+  until the command buffer is reset. HL2 loading does hundreds of small blits per command buffer.
+  Fix: `mesa/patches-26.3.0/0002-pvr-share-rt-datasets.patch`: device-level cache of RT datasets keyed
+  on (width, height, samples, layers); cached datasets are only destroyed at device destroy (the
+  framebuffer path already shares one dataset between many renders, so sharing is safe).
+  Mesa rev 4 (`debs/mesa-jh7110_26.3.0-4_riscv64.deb`) installed.
 - **2026-11-10 23:35**: Debugging the HL2/ToGL failure (Mesa debug variant:
   `BUILDTYPE=debug PKGREV=3 mesa/build.sh` → `debs/mesa-jh7110_26.3.0-3~dbg_riscv64.deb`, with
   temporary PVRDBG logging in pvr_cmd_buffer.h/pvr_arch_pipeline.c; sources restored afterwards).

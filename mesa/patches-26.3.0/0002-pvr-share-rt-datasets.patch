@@ -1,0 +1,134 @@
+Subject: [PATCH] pvr: share render target datasets per size across renders
+
+Generated-by: LLM
+---
+--- a/src/imagination/vulkan/pvr_rt_dataset.h
++++ b/src/imagination/vulkan/pvr_rt_dataset.h
+@@ -30,6 +30,8 @@
+    uint32_t samples;
+    uint32_t layers;
+ 
++   bool cached;
++
+    struct pvr_free_list *global_free_list;
+    struct pvr_free_list *local_free_list;
+ 
+@@ -76,7 +78,8 @@
+    u_foreach_bit (valid_idx, render_target->valid_mask) {
+       struct pvr_rt_dataset *rt_dataset = render_target->rt_dataset[valid_idx];
+ 
+-      if (rt_dataset && render_target->valid_mask & BITFIELD_BIT(valid_idx))
++      if (rt_dataset && !rt_dataset->cached &&
++          render_target->valid_mask & BITFIELD_BIT(valid_idx))
+          pvr_render_target_dataset_destroy(rt_dataset);
+ 
+       render_target->rt_dataset[valid_idx] = NULL;
+--- a/src/imagination/vulkan/pvr_device.h
++++ b/src/imagination/vulkan/pvr_device.h
+@@ -22,6 +22,7 @@
+ 
+ #include "wsi_common.h"
+ 
++#include "util/hash_table.h"
+ #include "util/mesa-blake3.h"
+ 
+ #include "ds/pvr_driver_ds.h"
+@@ -170,6 +171,9 @@
+    simple_mtx_t rs_mtx;
+    struct list_head render_states;
+ 
++   simple_mtx_t rt_cache_mtx;
++   struct hash_table_u64 *rt_cache;
++
+    /* Data Source for GPU tracing */
+    struct pvr_ds_device ds;
+ };
+--- a/src/imagination/vulkan/pvr_arch_device.c
++++ b/src/imagination/vulkan/pvr_arch_device.c
+@@ -953,6 +953,9 @@
+    simple_mtx_init(&device->rs_mtx, mtx_plain);
+    list_inithead(&device->render_states);
+ 
++   simple_mtx_init(&device->rt_cache_mtx, mtx_plain);
++   device->rt_cache = _mesa_hash_table_u64_create(NULL);
++
+    *pDevice = pvr_device_to_handle(device);
+ 
+    return VK_SUCCESS;
+@@ -1047,6 +1050,11 @@
+    simple_mtx_unlock(&device->rs_mtx);
+    simple_mtx_destroy(&device->rs_mtx);
+ 
++   hash_table_u64_foreach (device->rt_cache, entry)
++      pvr_render_target_dataset_destroy(entry.data);
++   _mesa_hash_table_u64_destroy(device->rt_cache);
++   simple_mtx_destroy(&device->rt_cache_mtx);
++
+    pvr_device_dummy_rt_finish(device);
+    pvr_arch_border_color_table_finish(device);
+    pvr_robustness_buffer_finish(device);
+--- a/src/imagination/vulkan/pvr_arch_cmd_buffer.c
++++ b/src/imagination/vulkan/pvr_arch_cmd_buffer.c
+@@ -3417,6 +3417,43 @@
+    return result;
+ }
+ 
++static VkResult
++pvr_render_target_dataset_get_cached(struct pvr_device *device,
++                                     uint32_t width,
++                                     uint32_t height,
++                                     uint32_t samples,
++                                     uint32_t layers,
++                                     struct pvr_rt_dataset **const rt_dataset_out)
++{
++   const uint64_t key = (uint64_t)width | ((uint64_t)height << 16) |
++                        ((uint64_t)samples << 32) | ((uint64_t)layers << 40);
++   struct pvr_rt_dataset *rt_dataset;
++   VkResult result = VK_SUCCESS;
++
++   simple_mtx_lock(&device->rt_cache_mtx);
++
++   rt_dataset = _mesa_hash_table_u64_search(device->rt_cache, key);
++   if (!rt_dataset) {
++      result = pvr_arch_render_target_dataset_create(device,
++                                                     width,
++                                                     height,
++                                                     samples,
++                                                     layers,
++                                                     &rt_dataset);
++      if (result == VK_SUCCESS) {
++         rt_dataset->cached = true;
++         _mesa_hash_table_u64_insert(device->rt_cache, key, rt_dataset);
++      }
++   }
++
++   simple_mtx_unlock(&device->rt_cache_mtx);
++
++   if (result == VK_SUCCESS)
++      *rt_dataset_out = rt_dataset;
++
++   return result;
++}
++
+ static inline VkResult pvr_render_targets_datasets_create(
+    struct pvr_device *device,
+    struct pvr_render_state *rstate,
+@@ -3436,12 +3473,12 @@
+       if (render_target->valid_mask & BITFIELD_BIT(view_idx))
+          continue;
+ 
+-      result = pvr_arch_render_target_dataset_create(device,
+-                                                     rstate->width,
+-                                                     rstate->height,
+-                                                     hw_render->sample_count,
+-                                                     layers,
+-                                                     &rt_dataset);
++      result = pvr_render_target_dataset_get_cached(device,
++                                                    rstate->width,
++                                                    rstate->height,
++                                                    hw_render->sample_count,
++                                                    layers,
++                                                    &rt_dataset);
+       if (result != VK_SUCCESS) {
+          pvr_render_targets_datasets_destroy(render_target);
+          pthread_mutex_unlock(&render_target->mutex);
