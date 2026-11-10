@@ -1,5 +1,8 @@
 shots/*.log
 /linux-*/
+!/linux-*-patches/
 /.kernel.git/
-*.deb
 /build/
+/debs/
+/logs/
+*.deb

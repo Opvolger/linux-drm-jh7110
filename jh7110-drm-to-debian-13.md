@@ -30,7 +30,7 @@
 | Part | Status | Notes |
 | --- | --- | --- |
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
-| Kernel 7.3 + patches | ⏳ not started | display series v7 found (based on 7.4-rc1), see *Kernel* |
+| Kernel 7.4-rc1 + patches | 🔧 building | 24 patches (PHY v7 + display v7) apply cleanly |
 | Display (DC8200 + HDMI) via DRM/KMS | ⏳ | `/dev/dri` does not exist yet on 6.12 |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ⏳ | |
 | Mesa (PowerVR Vulkan + Zink) | ⏳ | backports Mesa `25.2.6-1~bpo13+1` already installed |
@@ -39,9 +39,9 @@
 
 ## Plan
 
-1. [ ] Set up the project: git repo, `Makefile`, `scripts/`, `linux-7.3-patches/` (copy the
+1. [x] Set up the project: git repo, `Makefile`, `scripts/`, `linux-7.4-patches/` (copy the
        structure of `~/code/linux-kernel-jupiter-1`).
-2. [ ] Kernel 7.3 (mainline) + patches for the display controller, HDMI and GPU; cross-build
+2. [ ] Kernel 7.4-rc1 (mainline) + patches for the display controller, HDMI and GPU; cross-build
        `.deb`s (a modules + initramfs flavor based on the Debian config).
 3. [ ] Install next to the Debian kernel, boot it, check: `/dev/dri/card*`, `modetest`, a console
        on HDMI (watch via the UGREEN capture).
@@ -52,10 +52,47 @@
 7. [ ] Start Half-Life 2.
 8. [ ] Write and **test** the rollback how-to.
 
+## Project layout
+
+```text
+Makefile                  make checkout-7.4 / config-7.4 / deb-7.4 / export-7.4 (make help)
+linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series v7 (from lore)
+configs/debian/           Debian config of the board (7.1.7 backports), base for our config
+scripts/kernel-tree.sh    worktree linux-7.4/ of .kernel.git (shallow, tag v7.4-rc1) + git am
+scripts/make-config.sh    Debian config -> build/7.4/obj/.config (+ display options, no debug info)
+scripts/export-patches.sh commits in linux-7.4/ -> linux-7.4-patches/
+board-tools/              power, serial, U-Boot catch, screenshot, set-boot.sh (boot.scr)
+debs/                     built packages (not in git)
+logs/                     build logs (not in git)
+shots/                    HDMI captures for the documentation
+```
+
+Kernel release: `7.4.0-rc1-jh7110`; the package installs `/boot/vmlinuz-<rel>` (uncompressed
+Image, `KBUILD_IMAGE=arch/riscv/boot/Image`), DTBs in `/usr/lib/linux-image-<rel>/starfive/`;
+Debian's initramfs hook makes `/boot/initrd.img-<rel>`.
+
 ## Board facts (found during sessions)
 
 - Model: `StarFive VisionFive 2 v1.3B`, DTB `/boot/jh7110-starfive-visionfive-2-v1.3b.dtb`.
-- Boot: U-Boot → EFI (`/boot/efi` on `mmcblk1p4`, SPI/SD) → GRUB → kernel on `mmcblk0p1` (eMMC).
+- **Boot: U-Boot `bootflow scan` → `/boot.scr` on mmc 0:1 (eMMC root fs).** GRUB/EFI is installed
+  but *not* used (there is no grub.cfg). `/boot.scr` is compiled from `/boot.cmd` with `mkimage`.
+  Careful: at the start `/boot.cmd` said 7.1.7, but `/boot.scr` (the real one) boots
+  **6.12.74+deb13+1**. Use `board-tools/set-boot.sh <release>` to switch (keeps a backup
+  `/boot.scr.bak-<old>`).
+- Stock boot (6.12.74) as originally in `/boot.scr`; type this in U-Boot by hand to recover:
+  ```
+  load mmc 0:1 ${kernel_addr_r} /boot/vmlinux-6.12.74+deb13+1-riscv64
+  load mmc 0:1 ${fdt_addr_r} /usr/lib/linux-image-6.12.74+deb13+1-riscv64/starfive/jh7110-starfive-visionfive-2-v1.3b.dtb
+  load mmc 0:1 ${ramdisk_addr_r} /boot/initrd.img-6.12.74+deb13+1-riscv64
+  setenv bootargs 'root=/dev/mmcblk0p1 radeon.si_support=0 radeon.cik_support=0 amdgpu.si_support=1 amdgpu.cik_support=1'
+  booti ${kernel_addr_r} ${ramdisk_addr_r}:${filesize} ${fdt_addr_r}
+  ```
+- RAM 8 GB. No AMD card in the PCIe slot anymore (only the onboard VL805 USB controller).
+- SDDM is enabled (graphical.target), sessions: Plasma Wayland (`plasma`) and X11 (`plasmax11`).
+  No `/etc/sddm.conf.d/` config at the start.
+- Test tools installed on 2026-11-10: `libdrm-tests` (modetest), `drm-info`, `kmscube`,
+  `fastfetch`, `mesa-utils`, `vulkan-tools` (remove in the rollback if wanted).
+- No `/lib/firmware/powervr/` at the start.
 - Kernels already in `/boot`: Debian `6.12.x`, `6.17.13`, `7.0.10+deb13`, `7.1.7+deb13`
   (installed earlier; their origin is not documented yet).
 - Root filesystem: 54G, **94% full (~3.5G free)**. Watch this when installing kernels/Mesa.
@@ -198,3 +235,10 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 21:30**: user decided: base 7.4-rc1 (so no clk backport needed). Downloaded the PHY
+  (5) and display (19) series from lore (plain curl works; a browser UA gets an Anubis bot page).
+  All 24 apply cleanly on v7.4-rc1 ✅. Config from Debian 7.1.7 config + display options ✅.
+  Found the board really boots via `/boot.scr` (not GRUB). First `make deb-7.4` started.
+  Review remarks on the series (sashiko AI bot) worth remembering if something breaks: HPD irq
+  race in inno-hdmi after probe split; hdmi-subsystem regmap uses val_bits 8/stride 1 while the
+  children do 32-bit accesses at offset*4; DT CMA alloc-ranges breaks 1 GiB boards (ours: 8 GB).

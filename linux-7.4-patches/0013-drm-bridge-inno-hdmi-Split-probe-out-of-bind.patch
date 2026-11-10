@@ -1,0 +1,262 @@
+From mboxrd@z Thu Jan  1 00:00:00 1970
+Received: from bombadil.infradead.org (bombadil.infradead.org
+ [198.137.202.133])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest
+ SHA256)
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C0AA0606EEBC
+	for <linux-rockchip@archiver.kernel.org>;
+ Fri,  6 Nov 2026 13:59:32 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (2048-bit key,
+ unprotected) header.d=lists.infradead.org header.i=@lists.infradead.org
+ header.a=rsa-sha256 header.s=bombadil.20210309 header.b=jeLdOgY9;
+	dkim=fail reason="signature verification failed" (1024-bit key,
+ unprotected) header.d=samsung.com header.i=@samsung.com header.a=rsa-sha256
+ header.s=mail20170921 header.b=Fy66yNIb
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=lists.infradead.org; s=bombadil.20210309; h=Sender:
+	Content-Transfer-Encoding:Content-Type:Cc:List-Subscribe:List-Help:List-Post:
+	List-Archive:List-Unsubscribe:List-Id:References:To:In-Reply-To:Message-Id:
+	MIME-Version:Subject:Date:From:Reply-To:Content-ID:Content-Description:
+	Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID:
+	List-Unsubscribe-Post:List-Owner;
+	bh=Xy8J0QjTIXRxpYkx3PCR4DVF5ZJ6Oi1A95Vv1BTXZd8=; b=jeLdOgY97dbkesWIanmzcnee6J
+	s5uM6P/p2MQQOoXeocc+5qIGuB8b8lsotnF4HMcZhF4+u68qAmesQqXJ7ajWULppg6kec6Kjif7gh
+	Am0wpXmFmNYurSZNb2boTa3zwyiV0bpRJyLUHCERgfcI73BDG1ob201I02diNkgASrziaWYLfPZN0
+	M/HzcSrzw9zKjc39Aq6SnOCv8pid/X4mA4nyAt0nH7gEHU/8q5XOASdNDCi0u8ivjTmJhN+Gv9PrV
+	3jsBjWKxf1PJjHwbF6CAOZp11jrWXEfWuykoWZeMJcHveGtDV9WHH+akuc9k1sEg4YhbTdqbfyVID
+	Ia1G+wtw==;
+Received: from localhost ([::1] helo=bombadil.infradead.org)
+	by bombadil.infradead.org with esmtp (Exim 4.100.1 #2 (Red Hat Linux))
+	id 1xPKTY-0000000CX3g-2s2o;
+	Fri, 06 Nov 2026 13:59:28 +0000
+Received: from mailout1.w1.samsung.com ([210.118.77.11])
+	by bombadil.infradead.org with esmtps (Exim 4.100.1 #2 (Red Hat Linux))
+	id 1xPKTC-0000000CWMp-3f1j;
+	Fri, 06 Nov 2026 13:59:08 +0000
+Received: from eucas1p2.samsung.com (unknown [182.198.249.207])
+	by mailout1.w1.samsung.com (KnoxPortal) with ESMTP id
+ 20261106135904euoutp011927718c865fe051c98c87e7d012b17a~leW8rlyOI0202802028euoutp01M;
+	Fri,  6 Nov 2026 13:59:04 +0000 (GMT)
+DKIM-Filter: OpenDKIM Filter v2.11.0 mailout1.w1.samsung.com
+ 20261106135904euoutp011927718c865fe051c98c87e7d012b17a~leW8rlyOI0202802028euoutp01M
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=samsung.com;
+	s=mail20170921; t=1793973545;
+	bh=SJy6knPJ3U1RO9ZQMH29hZIVj78BiirQCTF7CFHTH4U=;
+	h=From:Date:Subject:In-Reply-To:To:Cc:References:From;
+	b=Fy66yNIbahx5v+Nxwsg6gSIw1NF65bG5tek76s/RTfpmRcKuhnVBuEvPd0vgwvf6v
+	 dUzkE5MEYIA1G/SGn+wYI7a3FAtxNhpcChyZUVaqTrwjtKQ6DwzerGnEGvTu2ircVk
+	 WxmsBtAfGxc5Bu/SZFpNlnUHwBGgNHjwteXZpCms=
+Received: from eusmtip1.samsung.com (unknown [203.254.199.221]) by
+	eucas1p1.samsung.com (KnoxPortal) with ESMTPA id
+	20261106135904eucas1p14897dcc411c444d202a38190fdffffe7~leW8aobOu2296222962eucas1p1G;
+	Fri,  6 Nov 2026 13:59:04 +0000 (GMT)
+Received: from AMDC4942.eu.corp.samsungelectronics.net (unknown
+	[106.210.136.40]) by eusmtip1.samsung.com (KnoxPortal) with ESMTPA id
+	20261106135902eusmtip1710e4471b7f77b1afc16bbdf73228e98~leW6qAtJp0565905659eusmtip1D;
+	Fri,  6 Nov 2026 13:59:02 +0000 (GMT)
+From: Michal Wilczynski <m.wilczynski@samsung.com>
+Date: Fri, 06 Nov 2026 14:58:42 +0100
+Subject: [PATCH v7 08/19] drm/bridge: inno-hdmi: Split probe out of bind
+X-Archived-By: <archiver.kernel.org>
+MIME-Version: 1.0
+Message-Id: <20261106-jh7110-clean-send-v7-8-68f7ea9913db@samsung.com>
+In-Reply-To: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
+To: Neil Armstrong <neil.armstrong@linaro.org>,  Rob Herring
+	<robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>,  Andrzej Hajda
+	<andrzej.hajda@intel.com>, Robert Foss <rfoss@kernel.org>,  Laurent Pinchart
+	<Laurent.pinchart@ideasonboard.com>,  Jonas Karlman <jonas@kwiboo.se>,
+	Jernej Skrabec <jernej.skrabec@gmail.com>,  Luca Ceresoli
+	<luca.ceresoli@bootlin.com>,  Maarten Lankhorst
+	<maarten.lankhorst@linux.intel.com>,  Maxime Ripard <mripard@kernel.org>,
+	Thomas Zimmermann <tzimmermann@suse.de>,  Philipp Zabel
+	<p.zabel@pengutronix.de>,  Emil Renner Berthing <kernel@esmil.dk>,  Hal Feng
+	<hal.feng@starfivetech.com>, Heiko Stuebner <heiko@sntech.de>,  Paul
+	Walmsley <pjw@kernel.org>, Palmer Dabbelt <palmer@dabbelt.com>,  Albert Ou
+	<aou@eecs.berkeley.edu>, Alexandre Ghiti <alex@ghiti.fr>,  Dominique
+	Belhachemi <db@domibel.de>, Andy Yan <andyshrk@163.com>,  David Airlie
+	<airlied@gmail.com>, Simona Vetter <simona@ffwll.ch>,  Yakir Yang
+	<kuankuan.y@gmail.com>,  Dmitry Baryshkov
+	<dmitry.baryshkov@oss.qualcomm.com>,  Michal Wilczynski
+	<m.wilczynski@samsung.com>,  Conor Dooley <conor@kernel.org>, William Qiu
+	<william.qiu@starfivetech.com>,  Xingyu Wu <xingyu.wu@starfivetech.com>,
+	Sandy Huang <hjc@rock-chips.com>,  Manivannan Sadhasivam <mani@kernel.org>
+X-Mailer: b4 0.15-dev
+X-Developer-Signature: v=1; a=openpgp-sha256; l=4776;
+	i=m.wilczynski@samsung.com; h=from:subject:message-id;
+	bh=862IzWw71BQoGb/BPHHj6uuaTnp3hDhV8BCXYH6fCIg=;
+	b=owGbwMvMwCGWumv6zndzRCIZT6slMWS9vSvexMOzI8UlOqAhoGbXwtN5r8LPqb2Xlfd8sHvv3
+	LcGC8ITO0pZGMQ4GGTFFFnObow2kvzH8LT8+ONfMHNYmUCGMHBxCsBE4jgY/sesuTOJf9Pl+Uu1
+	ubwil8d7eXcduSf1tEHm07GJ1z5JvXJk+Cvs5cbGGD+vw9z4caWz4MXTNu3Xwi5++df4gDPL9Nh
+	aL04A
+X-Developer-Key: i=m.wilczynski@samsung.com; a=openpgp;
+	fpr=CDB15B3219FE00E577C7E3FA65BA97B9EE9C1459
+X-CMS-MailID: 20261106135904eucas1p14897dcc411c444d202a38190fdffffe7
+X-Msg-Generator: CA
+X-RootMTR: 20261106135904eucas1p14897dcc411c444d202a38190fdffffe7
+X-EPHeader: CA
+X-CMS-RootMailID: 20261106135904eucas1p14897dcc411c444d202a38190fdffffe7
+References: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
+	<CGME20261106135904eucas1p14897dcc411c444d202a38190fdffffe7@eucas1p1.samsung.com>
+X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.9.0 (BSD) ) MR-646709E3 
+X-CRM114-CacheID: sfid-20261106_055907_197581_2BB768CF 
+X-CRM114-Status: GOOD (  21.21  )
+X-Spam-Score: -4.4 (----)
+X-BeenThere: linux-rockchip@lists.infradead.org
+X-Mailman-Version: 2.1.34
+Precedence: list
+List-Id: Upstream kernel work for Rockchip platforms
+ <linux-rockchip.lists.infradead.org>
+List-Archive: <http://lists.infradead.org/pipermail/linux-rockchip/>
+List-Post: <mailto:linux-rockchip@lists.infradead.org>
+List-Help: <mailto:linux-rockchip-request@lists.infradead.org?subject=help>
+List-Subscribe: <http://lists.infradead.org/mailman/listinfo/linux-rockchip>,
+ <mailto:linux-rockchip-request@lists.infradead.org?subject=subscribe>
+Cc: Joshua Peisach <jpeisach@ubuntu.com>, devicetree@vger.kernel.org,
+ linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+ Chaoyi Chen <chaoyi.chen@rock-chips.com>,
+ Maud Spierings <maud_spierings@murena.io>,
+ linux-rockchip@lists.infradead.org, Icenowy Zheng <zhengxingda@iscas.ac.cn>,
+ Byron Stanoszek <gandalf@winds.org>,
+ =?utf-8?q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>,
+ linux-riscv@lists.infradead.org, Graham Markall <hello@big-grey.co.uk>,
+ OOHehir <oo.hehir@gmail.com>, linux-arm-kernel@lists.infradead.org,
+ Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Sender: "Linux-rockchip" <linux-rockchip-bounces@lists.infradead.org>
+X-Spam-Status: No, score=-16.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_EF,HEADER_FROM_DIFFERENT_DOMAINS,
+	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no version=4.0.1
+X-Spam-Checker-Version: SpamAssassin 4.0.1 (2024-03-26) on
+	aws-us-west-2-korg-listserv-alma10-1
+
+inno_hdmi_bind() both sets up the bridge and attaches it to a DRM
+encoder. A platform whose HDMI controller is a child of a larger device
+needs the first half without the second, since it registers as its own
+platform driver and lets the DRM core bind the bridge later.
+
+Move the setup into a new exported inno_hdmi_probe(), and reduce
+inno_hdmi_bind() to a wrapper around it. Like inno_hdmi_probe() and
+dw_hdmi_bind(), it now takes the platform_device, so the Rockchip glue
+does the to_platform_device() conversion instead.
+
+No functional change intended.
+
+Reviewed-by: Joshua Peisach <jpeisach@ubuntu.com>
+Tested-by: Byron Stanoszek <gandalf@winds.org>
+Tested-by: OOHehir <oo.hehir@gmail.com>
+Signed-off-by: Michal Wilczynski <m.wilczynski@samsung.com>
+---
+ drivers/gpu/drm/bridge/inno-hdmi.c            | 39 +++++++++++++++++++++++----
+ drivers/gpu/drm/rockchip/inno_hdmi-rockchip.c |  2 +-
+ include/drm/bridge/inno_hdmi.h                |  6 ++++-
+ 3 files changed, 40 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/inno-hdmi.c b/drivers/gpu/drm/bridge/inno-hdmi.c
+index 5bfe59f18823a8628b0b65a768d2ba9989a0f30a..aa64ffdbd30721603aebbcd5d5747851be789911 100644
+--- a/drivers/gpu/drm/bridge/inno-hdmi.c
++++ b/drivers/gpu/drm/bridge/inno-hdmi.c
+@@ -1063,11 +1063,24 @@ static struct i2c_adapter *inno_hdmi_i2c_adapter(struct inno_hdmi *hdmi)
+ 	return adap;
+ }
+ 
+-struct inno_hdmi *inno_hdmi_bind(struct device *dev,
+-				 struct drm_encoder *encoder,
+-				 const struct inno_hdmi_plat_data *plat_data)
++/**
++ * inno_hdmi_probe - Internal helper to perform common setup
++ * @pdev: platform device
++ * @plat_data: SoC-specific platform data
++ *
++ * This function handles all the common hardware setup: allocating the main
++ * struct, mapping registers, getting clocks, initializing the hardware,
++ * setting up the IRQ, and initializing the DDC adapter and bridge struct.
++ *
++ * It registers the bridge but does not attach it, for glue drivers that probe
++ * as their own platform device rather than through a component bind.
++ *
++ * Return: the inno_hdmi instance on success, or an ERR_PTR() on failure.
++ */
++struct inno_hdmi *inno_hdmi_probe(struct platform_device *pdev,
++				  const struct inno_hdmi_plat_data *plat_data)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
++	struct device *dev = &pdev->dev;
+ 	struct inno_hdmi *hdmi;
+ 	int irq;
+ 	int ret;
+@@ -1131,7 +1144,23 @@ struct inno_hdmi *inno_hdmi_bind(struct device *dev,
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 
+-	ret = drm_bridge_attach(encoder, &hdmi->bridge, NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
++	return hdmi;
++}
++EXPORT_SYMBOL_GPL(inno_hdmi_probe);
++
++struct inno_hdmi *inno_hdmi_bind(struct platform_device *pdev,
++				 struct drm_encoder *encoder,
++				 const struct inno_hdmi_plat_data *plat_data)
++{
++	struct inno_hdmi *hdmi;
++	int ret;
++
++	hdmi = inno_hdmi_probe(pdev, plat_data);
++	if (IS_ERR(hdmi))
++		return hdmi;
++
++	ret = drm_bridge_attach(encoder, &hdmi->bridge, NULL,
++				DRM_BRIDGE_ATTACH_NO_CONNECTOR);
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 
+diff --git a/drivers/gpu/drm/rockchip/inno_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/inno_hdmi-rockchip.c
+index 33ff195bd2e65367792710ed2bcfb2f7c217d8e6..1f04489477e07f61e8793e08e03e73566366c725 100644
+--- a/drivers/gpu/drm/rockchip/inno_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/inno_hdmi-rockchip.c
+@@ -127,7 +127,7 @@ static int inno_hdmi_rockchip_bind(struct device *dev, struct device *master, vo
+ 
+ 	dev_set_drvdata(dev, hdmi);
+ 
+-	hdmi->base = inno_hdmi_bind(dev, encoder, plat_data);
++	hdmi->base = inno_hdmi_bind(to_platform_device(dev), encoder, plat_data);
+ 
+ 	connector = drm_bridge_connector_init(drm, encoder);
+ 	if (IS_ERR(connector)) {
+diff --git a/include/drm/bridge/inno_hdmi.h b/include/drm/bridge/inno_hdmi.h
+index 5bbcaeea94e2a20fd0dc0ae0c6946eb5604bbaf6..507d5e999183ca02e7dcbe4ce7568acc21426a89 100644
+--- a/include/drm/bridge/inno_hdmi.h
++++ b/include/drm/bridge/inno_hdmi.h
+@@ -12,6 +12,7 @@ struct device;
+ struct drm_encoder;
+ struct drm_display_mode;
+ struct inno_hdmi;
++struct platform_device;
+ 
+ struct inno_hdmi_plat_ops {
+ 	void (*enable)(struct device *pdev, struct drm_display_mode *mode);
+@@ -29,7 +30,10 @@ struct inno_hdmi_plat_data {
+ 	struct inno_hdmi_phy_config *default_phy_config;
+ };
+ 
+-struct inno_hdmi *inno_hdmi_bind(struct device *pdev,
++struct inno_hdmi *inno_hdmi_bind(struct platform_device *pdev,
+ 				 struct drm_encoder *encoder,
+ 				 const struct inno_hdmi_plat_data *plat_data);
++
++struct inno_hdmi *inno_hdmi_probe(struct platform_device *pdev,
++				  const struct inno_hdmi_plat_data *plat_data);
+ #endif /* __INNO_HDMI__ */
+
+-- 
+2.34.1
+
+
+_______________________________________________
+Linux-rockchip mailing list
+Linux-rockchip@lists.infradead.org
+http://lists.infradead.org/mailman/listinfo/linux-rockchip
