@@ -30,7 +30,7 @@
 | Part | Status | Notes |
 | --- | --- | --- |
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
-| Kernel 7.3 + patches | ⏳ not started | patch list still needed (see Open questions) |
+| Kernel 7.3 + patches | ⏳ not started | display series v7 found (based on 7.4-rc1), see *Kernel* |
 | Display (DC8200 + HDMI) via DRM/KMS | ⏳ | `/dev/dri` does not exist yet on 6.12 |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ⏳ | |
 | Mesa (PowerVR Vulkan + Zink) | ⏳ | backports Mesa `25.2.6-1~bpo13+1` already installed |
@@ -61,8 +61,11 @@
 - Root filesystem: 54G, **94% full (~3.5G free)**. Watch this when installing kernels/Mesa.
 - Mesa: `mesa-vulkan-drivers` / `libgl1-mesa-dri` `25.2.6-1~bpo13+1` from trixie-backports
   (trixie itself has `25.0.7-2+deb13u1`).
-- `~/games` on the board: `hl2-dxvk`, `hl2-dxvk-pr`, `hl2-libjpeg-pr`, `hl2-riscv-pr-x86`,
-  `hl2-source`, `hl2-wayland-pr`.
+- `~/games` on the board: only `hl2-source`. More builds are on the build machine in
+  `~/games` (`hl2-dxvk`, `hl2-wayland-pr`, ...); copy one over if needed. Port notes:
+  `/home/opvolger/code/source-engine/port-to-riscv.md`.
+- KDE Plasma is already installed (HL2 ran before on an AMD GPU in this board).
+- The Debian `7.0.10` and `7.1.7` kernels (backports) may be removed to free space.
 
 ## Software
 
@@ -70,7 +73,26 @@
 
 Base: mainline **7.3** (stable). The patches should apply to 7.3 with small changes.
 
-Patches: *(list still to be provided; see Open questions)*
+Display patches (provided by the user): **"[PATCH v7 00/19] drm: starfive: jh7110: Enable display
+subsystem"** by Michal Wilczynski, 2026-11-06.
+
+- Thread: https://kernelthread.org/t/CGME20261106135849eucas1p242718d72fa1f38e31477210fd9ee30bc@eucas1p2.samsung.com
+- lore: https://lore.kernel.org/all/20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com/
+- **Based on v7.4-rc1**, not 7.3. Dependencies:
+  - PHY series "phy: Add the StarFive JH7110 Innosilicon HDMI PHY" v7:
+    https://lore.kernel.org/all/20261106-jh7110-inno-hdmi-phy-v7-0-d49368303800@samsung.com/
+  - clk patch `af384d6e0573` (merged in v7.4-rc1): backport this to 7.3.
+- Contents: inno-hdmi bridge refactor + fixes, DT bindings, `soc: starfive` hdmi/vout subsystem
+  drivers, JH7110 HDMI bridge driver, DTS update.
+- External test write-up: https://big-grey.co.uk/2026/01/26/testing-starfive-jh7110-display-controller-patches/
+
+What 7.3 already has (checked in `~/code/linux-kernel-jupiter-1/linux-7.3-vanilla`): the
+Verisilicon DC driver (`drivers/gpu/drm/verisilicon/`) and `drivers/gpu/drm/bridge/inno-hdmi.c`.
+
+**GPU (BXE-4-32): not in mainline.** 7.3 has no `gpu@` node in `jh7110.dtsi` and no JH7110 or BXE
+compatible in `drm/imagination`. The kernel docs list BXE-4-32 as unsupported, and Mesa's
+`imagination` Vulkan driver does not support it either (as of 2026-11; to be verified). This
+display series gives **KMS/HDMI only, no 3D acceleration**.
 
 ### Mesa
 
@@ -132,9 +154,9 @@ determined). Grab a frame to see what the board shows on HDMI.
 
 ## Open questions
 
-- Which patches (the list under *Kernel* is empty).
-- Which HL2 build in `~/games` is the target.
-- Desktop or no desktop (X11/Wayland, which DE/compositor), or HL2 directly on KMS/DRM.
+- **GPU acceleration**: BXE-4-32 is not upstream (see *Kernel*). What should we aim for:
+  display only plus llvmpipe, out-of-tree GPU work, or something else? (asked 2026-11-10)
+- Kernel base: 7.3 plus backports, or move to 7.4-rc1 (the base of the series)?
 
 ## Progress log
 
@@ -142,3 +164,5 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
 
 - **2026-11-10**: Document restructured and translated to English. Board inventory taken (see
   *Board facts*). Nothing built yet.
+- **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
+  PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
