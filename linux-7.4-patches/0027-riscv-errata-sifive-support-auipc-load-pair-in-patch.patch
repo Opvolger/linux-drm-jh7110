@@ -12,11 +12,11 @@ insn pair by fixing the offsets in immediate, just like in function
 Signed-off-by: Bo Gan <ganboing@gmail.com>
 (cherry picked from commit 728d2f2deacd95e677350b9ba9fd285a64e1e4d3)
 ---
- arch/riscv/errata/sifive/errata.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/riscv/errata/sifive/errata.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/arch/riscv/errata/sifive/errata.c b/arch/riscv/errata/sifive/errata.c
-index 1a5d223eb..12d5da385 100644
+index 1a5d223eb..c1907e0f4 100644
 --- a/arch/riscv/errata/sifive/errata.c
 +++ b/arch/riscv/errata/sifive/errata.c
 @@ -100,6 +100,7 @@ void sifive_errata_patch_func(struct alt_entry *begin, struct alt_entry *end,
@@ -27,7 +27,7 @@ index 1a5d223eb..12d5da385 100644
  	u32 cpu_req_errata;
  	u32 tmp;
  
-@@ -118,9 +119,12 @@ void sifive_errata_patch_func(struct alt_entry *begin, struct alt_entry *end,
+@@ -118,9 +119,13 @@ void sifive_errata_patch_func(struct alt_entry *begin, struct alt_entry *end,
  
  		tmp = (1U << alt->patch_id);
  		if (cpu_req_errata & tmp) {
@@ -38,7 +38,8 @@ index 1a5d223eb..12d5da385 100644
 -			patch_text_nosync(ALT_OLD_PTR(alt), ALT_ALT_PTR(alt),
 -					  alt->alt_len);
 +			patch_text_nosync(oldptr, altptr, alt->alt_len);
-+			riscv_alternative_fix_offsets(oldptr, alt->alt_len, oldptr - altptr);
++			riscv_alternative_fix_offsets(oldptr, alt->alt_len, oldptr - altptr,
++						      false);
  			mutex_unlock(&text_mutex);
  		}
  	}

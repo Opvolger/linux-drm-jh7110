@@ -92,7 +92,7 @@ index 4f77b3c6d..e7f58e184 100644
  	bool "StarFive JH7100 support"
  	depends on ARCH_STARFIVE
 diff --git a/arch/riscv/errata/sifive/errata.c b/arch/riscv/errata/sifive/errata.c
-index 12d5da385..2318d753b 100644
+index c1907e0f4..e79ee1386 100644
 --- a/arch/riscv/errata/sifive/errata.c
 +++ b/arch/riscv/errata/sifive/errata.c
 @@ -8,11 +8,37 @@
