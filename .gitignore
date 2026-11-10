@@ -1,0 +1,5 @@
+shots/*.log
+/linux-*/
+/.kernel.git/
+*.deb
+/build/

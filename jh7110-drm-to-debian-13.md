@@ -138,10 +138,23 @@ docker run -d --name tftp --network host -v $(pwd):/var/tftpboot pghalliday/tftp
 Useful when a kernel hangs completely: boot a test kernel over the network from U-Boot without
 touching the eMMC.
 
+### Helper scripts (`board-tools/`, copied from the jupiter project)
+
+- `board-tools/power.sh on|off|toggle|state`: shut down cleanly first (`ssh ... sudo poweroff`).
+- `python3 -I board-tools/catch.py ' ' 60`: run it right after a reboot; it spams keys and stops
+  U-Boot autoboot (prompt `StarFive #`).
+- `python3 -I board-tools/ser.py <secs> 'cmd1' 'cmd2'`: send commands, e.g. `'boot'`.
+- `board-tools/screenshot.sh shots/x.png`: grab an HDMI frame.
+
+Verified 2026-11-10: power state ✅, HDMI capture ✅ (`/dev/video2`, UGREEN), reboot + U-Boot
+interrupt ✅ (U-Boot 2025.07-rc3, `bootcmd=bootflow scan`), `dhcp` in U-Boot ✅, `boot` back to
+Linux ✅. **TFTP ❌: the Fedora firewall blocks UDP 69** (zone `FedoraWorkstation`; the user must
+run `sudo firewall-cmd --add-service=tftp` once, `--permanent` too). Build machine IP: `192.168.2.34`.
+
 ### Watching the HDMI output (UGREEN capture)
 
 An HDMI capture device is connected to this machine (`/dev/video*`; which node is still to be
-determined). Grab a frame to see what the board shows on HDMI.
+`/dev/video2` "UGREEN HDMI Capture"; the script looks it up by name). Grab a frame to see what the board shows on HDMI.
 
 ## Rollback to stock Debian 13
 
@@ -154,9 +167,19 @@ determined). Grab a frame to see what the board shows on HDMI.
 
 ## Open questions
 
-- **GPU acceleration**: BXE-4-32 is not upstream (see *Kernel*). What should we aim for:
-  display only plus llvmpipe, out-of-tree GPU work, or something else? (asked 2026-11-10)
-- Kernel base: 7.3 plus backports, or move to 7.4-rc1 (the base of the series)?
+(none open)
+
+## Decisions (user, 2026-11-10)
+
+1. Kernel base: **7.4-rc1** is fine (instead of 7.3).
+2. Phase A: KDE Plasma on HDMI with display-only (llvmpipe). Take screenshots with a terminal
+   running `fastfetch` for the documentation.
+3. Phase B: look for out-of-tree BXE-4-32 GPU work (Linux, maybe also FreeBSD/Haiku, etc.) and
+   try it. **Do not start HL2 in this phase.**
+4. Phase C: if B really does not work, use the StarFive vendor kernel 6.6 + their Mesa/GPU
+   packages to get HL2 running (still with a rollback how-to).
+5. The user leaves the machine; work autonomously.
+
 
 ## Progress log
 
