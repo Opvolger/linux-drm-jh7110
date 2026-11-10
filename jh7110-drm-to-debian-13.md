@@ -32,8 +32,8 @@
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
 | Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
-| GPU (IMG BXE-4-32, `drm/imagination`) | 🔧 | domibel's patches rebased on 7.4-rc1; firmware deb installed |
-| Mesa (PowerVR Vulkan + Zink) | 🔧 | Mesa 26.3.0 cross-built: `debs/mesa-jh7110_26.3.0-1_riscv64.deb` (in /opt, not installed yet) |
+| GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
+| Mesa (PowerVR Vulkan + Zink) | ✅/🔧 | Mesa 26.3.0 in /opt: Zink GL 3.2 core+compat, GLES 3.1 on the GPU (GBM); KDE session not yet on it |
 | Half-Life 2 | ⏳ | |
 | Rollback how-to tested | ⏳ | |
 
@@ -285,6 +285,15 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 22:30**: ✅ **GPU works.** Kernel 7.4.0-rc1-2 boots with `Using XPbmtUC bit 32`.
+  powervr probes from the initramfs *before* the root fs is there → firmware -2. After
+  `modprobe -r powervr; modprobe powervr`: "loaded firmware powervr/rogue_36.50.54.182_v1.fw, FW
+  version v1.1 (build 6976702 OS)", "Initialized powervr 1.0.0 ... minor 1", `/dev/dri/renderD128`.
+  With `. /opt/mesa-jh7110/env.sh`: `vulkaninfo` → GPU0 "PowerVR B-Series BXE-4-32 MC1", apiVersion
+  1.2.363, Mesa 26.3.0; `eglinfo -B` GBM → "zink Vulkan 1.2(PowerVR B-Series BXE-4-32 MC1)", OpenGL
+  3.2 core + 3.2 compat, GLES 3.1. Wayland platform still softpipe (kwin runs on Debian Mesa).
+  Build fix needed: in 7.4 `riscv_alternative_fix_offsets()` got an `early` argument → `false` in
+  the sifive errata path (folded into patch 0027).
 - **2026-11-10 21:55**: Phase B started. Cherry-picked from github.com/domibel/linux onto 7.4-rc1:
   Samuel Holland's ALTERNATIVE_3 (conflict: 7.4 dropped the !CONFIG_RISCV_ALTERNATIVE branch →
   keep only the real define), "auipc+load pair" (conflict: 7.4 added an `early` arg → kept),
