@@ -30,10 +30,10 @@
 | Part | Status | Notes |
 | --- | --- | --- |
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
-| Kernel 7.4-rc1 + patches | 🔧 building | 24 patches (PHY v7 + display v7) apply cleanly |
-| Display (DC8200 + HDMI) via DRM/KMS | ⏳ | `/dev/dri` does not exist yet on 6.12 |
+| Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
+| Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ⏳ | |
-| Mesa (PowerVR Vulkan + Zink) | ⏳ | backports Mesa `25.2.6-1~bpo13+1` already installed |
+| Mesa (PowerVR Vulkan + Zink) | 🔧 | Mesa 26.3.0 cross-built: `debs/mesa-jh7110_26.3.0-1_riscv64.deb` (in /opt, not installed yet) |
 | Half-Life 2 | ⏳ | |
 | Rollback how-to tested | ⏳ | |
 
@@ -41,9 +41,9 @@
 
 1. [x] Set up the project: git repo, `Makefile`, `scripts/`, `linux-7.4-patches/` (copy the
        structure of `~/code/linux-kernel-jupiter-1`).
-2. [ ] Kernel 7.4-rc1 (mainline) + patches for the display controller, HDMI and GPU; cross-build
+2. [x] Kernel 7.4-rc1 (mainline) + patches for the display controller, HDMI and GPU; cross-build
        `.deb`s (a modules + initramfs flavor based on the Debian config).
-3. [ ] Install next to the Debian kernel, boot it, check: `/dev/dri/card*`, `modetest`, a console
+3. [x] Install next to the Debian kernel, boot it, check: `/dev/dri/card*`, `modetest`, a console
        on HDMI (watch via the UGREEN capture).
 4. [ ] GPU: `drm/imagination` loads and its firmware is found (`/lib/firmware/powervr/`).
 5. [ ] Mesa: check whether trixie-backports is enough (PowerVR Vulkan driver for BXE-4-32,
@@ -226,6 +226,28 @@ own shell command.
 An HDMI capture device is connected to this machine (`/dev/video*`; which node is still to be
 `/dev/video2` "UGREEN HDMI Capture"; the script looks it up by name). Grab a frame to see what the board shows on HDMI.
 
+## Phase A result: KDE on HDMI without GPU (2026-11-10 21:47) ✅
+
+![KDE + fastfetch](shots/phase-a-kde-fastfetch-llvmpipe.png)
+
+Changes on the board needed for the KDE session (all in their own files, delete to undo):
+
+- `/etc/sddm.conf.d/50-jh7110.conf`: `GreeterEnvironment=QT_QUICK_BACKEND=software` (the SDDM
+  greeter `sddm-greeter-qt6` crashes with SIGSEGV in `QSGRenderThread` on llvmpipe; it also did that
+  on 7 Nov, before this project) plus `[Autologin] User=opvolger Session=plasma` (Wayland).
+- `~/.config/plasma-workspace/env/jh7110-kwin.sh`: `export KWIN_DRM_NO_AMS=1`. With atomic
+  modesetting kwin's TEST_ONLY commit fails with EINVAL ("Atomic modeset test failed! Invalid
+  argument"), and with drm.debug=0x16 nothing is logged: the state gets connector 42 + CRTC 40 + CRTC
+  50 and is then cleared without `atomic_check`, so a property is rejected while being set. With
+  legacy KMS it works. Root cause still to find (verisilicon driver; candidate: a CRTC/plane
+  property kwin sets).
+- `~/.config/autostart/jh7110-fastfetch.desktop`: Konsole with fastfetch (for the screenshot).
+- Small green specks are scattered on the screen: probably cache lines of the non-coherent
+  framebuffer (see the dri-devel thread "drm: verisilicon: support non-coherent DMA framebuffers").
+- Other boot remarks on 7.4: `end1` (2nd ethernet) "Failed to reset the dma" (unused port);
+  `CCACHE: DataError` once at boot; `i2c i2c-7: of_i2c: modalias failure ... controller/ports`
+  (harmless, the DDC bus works: EDID is read).
+
 ## Rollback to stock Debian 13
 
 *(to be written and tested in step 8)*. Expected outline:
@@ -259,6 +281,12 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 21:47**: ✅ **Phase A done.** 7.4.0-rc1-jh7110 boots via `/boot.scr`; DRM
+  `verisilicon` card0, HDMI-A-1 connected, EDID read, fbcon visible. SDDM greeter crashed → software
+  Qt Quick + autologin. kwin_wayland: atomic test fails (EINVAL) → `KWIN_DRM_NO_AMS=1` → Plasma
+  Wayland + Konsole/fastfetch on HDMI (screenshot). Meanwhile Mesa 26.3.0 cross-built in docker
+  (`mesa/Dockerfile`, `mesa/build.sh`): needed a wayland-scanner 1.24 wrapper (reports 1.23.1, drops
+  `--strict`) because the wayland-protocols 1.49 subproject uses the new `frozen` attribute.
 - **2026-11-10 21:30**: user decided: base 7.4-rc1 (so no clk backport needed). Downloaded the PHY
   (5) and display (19) series from lore (plain curl works; a browser UA gets an Anubis bot page).
   All 24 apply cleanly on v7.4-rc1 ✅. Config from Debian 7.1.7 config + display options ✅.
