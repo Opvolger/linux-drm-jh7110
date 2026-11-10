@@ -148,8 +148,9 @@ touching the eMMC.
 
 Verified 2026-11-10: power state ✅, HDMI capture ✅ (`/dev/video2`, UGREEN), reboot + U-Boot
 interrupt ✅ (U-Boot 2025.07-rc3, `bootcmd=bootflow scan`), `dhcp` in U-Boot ✅, `boot` back to
-Linux ✅. TFTP ✅ after the user ran `sudo firewall-cmd --add-service=tftp` (runtime only: after a
-reboot of the build machine port 69 is blocked again unless `--permanent` is added). Build machine
+Linux ✅. TFTP ✅ after the user ran `sudo firewall-cmd --add-service=tftp`. This is **deliberately not
+permanent** (the user opens it per session for safety on other networks). If TFTP times out at
+`Loading:`, ask the user to run that command again. Do not suggest `--permanent`. Build machine
 IP: `192.168.2.34`. In U-Boot: `dhcp` sets `serverip` to the router (.254), so run
 `setenv serverip 192.168.2.34` **after** `dhcp`; send U-Boot commands one per `ser.py` call
 (they get garbled when sent while `dhcp` is still running). Example load: `tftpboot 0x44000000 <file>`.
