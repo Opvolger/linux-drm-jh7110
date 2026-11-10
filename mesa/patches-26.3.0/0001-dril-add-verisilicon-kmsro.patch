@@ -1,0 +1,14 @@
+Subject: [PATCH] dril: add verisilicon to the kmsro driver names
+
+Generated-by: LLM
+---
+--- a/src/gallium/targets/dril/meson.build
++++ b/src/gallium/targets/dril/meson.build
+@@ -98,6 +98,7 @@
+                'stm',
+                'sun4i-drm',
+                'udl',
++               'verisilicon',
+                'vkms',
+                'zynqmp-dpsub',
+              ]],

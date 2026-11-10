@@ -11,6 +11,7 @@
 # Two stages (the imagination Vulkan driver needs host tools at build time):
 #   1. native x86_64 build of the host tools mesa_clc, vtn_bindgen2 and pdsc_precomp
 #   2. riscv64 cross build with -Dmesa-clc=system -Dprecomp-compiler=system
+# Local Mesa patches: mesa/patches-<version>/*.patch (applied once, marker mesa-<ver>/.patched).
 # Drivers: imagination (PowerVR Vulkan, BXE-4-32 is "unsupported" upstream so it needs
 # PVR_I_WANT_A_BROKEN_VULKAN_DRIVER=1), zink (OpenGL on Vulkan), softpipe (fallback).
 set -euo pipefail
@@ -83,7 +84,9 @@ export VK_DRIVER_FILES=\$(ls $PREFIX/share/vulkan/icd.d/*.json | paste -sd:)
 export VK_ADD_LAYER_PATH=$PREFIX/share/vulkan/implicit_layer.d
 export PVR_I_WANT_A_BROKEN_VULKAN_DRIVER=1
 export MESA_VK_DEVICE_SELECT=1010:36054182
-export MESA_LOADER_DRIVER_OVERRIDE=zink
+# No MESA_LOADER_DRIVER_OVERRIDE: on the display card (driver "verisilicon") Mesa uses kmsro,
+# which renders with Zink on the PowerVR GPU into scanout buffers of the display. For
+# headless use of the PowerVR render node only, set MESA_LOADER_DRIVER_OVERRIDE=zink yourself.
 EOF
 cat > "$P/usr/local/bin/mesa-jh7110-run" <<EOF
 #!/bin/sh
