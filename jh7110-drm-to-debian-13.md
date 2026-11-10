@@ -318,6 +318,17 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 23:35**: Debugging the HL2/ToGL failure (Mesa debug variant:
+  `BUILDTYPE=debug PKGREV=3 mesa/build.sh` → `debs/mesa-jh7110_26.3.0-3~dbg_riscv64.deb`, with
+  temporary PVRDBG logging in pvr_cmd_buffer.h/pvr_arch_pipeline.c; sources restored afterwards).
+  gdb (`~/hl2-gdb.cmd` on the board: `break mesa_log if level == 0 && ($_memeq(format,"PVRDBG",6) ||
+  $_memeq(format,"ZINK",4))`) shows: the error is set in `pvr_rogue_cmd_buffer_end_sub_cmd`
+  (pvr_arch_cmd_buffer.c:2568, after `pvr_sub_cmd_gfx_job_init` fails) from `CmdEndRendering` of a
+  u_blitter blit (32x32, texelFetch) for ToGL's `glGetTexImage` (`GLMContext::GenDebugFontTex`).
+  Candidate: `pvr_render_targets_dataset_init()` (HWRT dataset / free list ioctl). **After such a
+  failure the GPU hangs for every client (kwin too) without any kernel message → reboot needed.**
+  Also seen: `verisilicon-dc: swiotlb buffer is full` (DC8200 has a 32-bit DMA mask, imported buffers
+  above 4 GB get bounced; to look at later).
 - **2026-11-10 23:05**: HL2. `~/games/hl2-source` on the board is the **DXVK** build (DXVK 3.1.1):
   "Skipping: Device does not support Vulkan 1.3" → `DxvkError` ❌ (PowerVR is Vulkan 1.2). Deployed the
   **ToGL** build (`~/code/source-engine/install-riscv64`, sha256 checked) to `~/games/hl2-source-togl`

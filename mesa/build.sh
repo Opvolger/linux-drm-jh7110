@@ -20,6 +20,9 @@ REV=${PKGREV:-1}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PREFIX=/opt/mesa-jh7110
 IMAGE=mesa-cross-riscv64:trixie
+# BUILDTYPE=debug: debugoptimized + assertions, own build dir, package version <ver>-<rev>~dbg
+BUILDTYPE=${BUILDTYPE:-release}
+if [ "$BUILDTYPE" = debug ]; then MBT=debugoptimized; NDEBUG=false; SFX=-dbg; DREV="~dbg"; else MBT=release; NDEBUG=true; SFX=; DREV=; fi
 
 cd "$ROOT/mesa"
 [ -d "mesa-$VER" ] || { curl -fsSLO "https://archive.mesa3d.org/mesa-$VER.tar.xz" && tar xf "mesa-$VER.tar.xz"; }
@@ -46,6 +49,7 @@ endian = 'little'
 EOF
 
 docker run --rm -u "$(id -u):$(id -g)" -v "$ROOT/mesa:/w" -w /w -e VER="$VER" -e PREFIX="$PREFIX" \
+	-e MBT="$MBT" -e NDEBUG="$NDEBUG" -e SFX="$SFX" \
 	"$IMAGE" bash -euo pipefail -c '
 src=/w/mesa-$VER
 # --- stage 1: host tools ---
@@ -60,20 +64,20 @@ if [ ! -x /w/build-native/install/bin/mesa_clc ]; then
 fi
 export PATH=/w/build-native/install/bin:$PATH
 # --- stage 2: riscv64 ---
-meson setup --wipe /w/build-riscv64/obj $src --cross-file /w/cross-riscv64.ini --prefix=$PREFIX \
-	--libdir=lib -Dbuildtype=release \
+meson setup --wipe /w/build-riscv64$SFX/obj $src --cross-file /w/cross-riscv64.ini --prefix=$PREFIX \
+	--libdir=lib -Dbuildtype=$MBT -Db_ndebug=$NDEBUG \
 	-Dplatforms=x11,wayland -Dvulkan-drivers=imagination -Dgallium-drivers=zink,softpipe \
 	-Dglx=dri -Degl=enabled -Dgbm=enabled -Dglvnd=disabled -Dgles1=disabled -Dgles2=enabled \
 	-Dllvm=disabled -Dmesa-clc=system -Dprecomp-compiler=system \
 	-Dvalgrind=disabled -Dlibunwind=disabled -Dlmsensors=disabled -Dvideo-codecs= \
 	-Dvulkan-layers=device-select
-ninja -C /w/build-riscv64/obj
-rm -rf /w/build-riscv64/pkg
-DESTDIR=/w/build-riscv64/pkg ninja -C /w/build-riscv64/obj install
+ninja -C /w/build-riscv64$SFX/obj
+rm -rf /w/build-riscv64$SFX/pkg
+DESTDIR=/w/build-riscv64$SFX/pkg ninja -C /w/build-riscv64$SFX/obj install
 '
 
 # --- package ---
-P=build-riscv64/pkg
+P=build-riscv64$SFX/pkg
 mkdir -p "$P/DEBIAN" "$P/usr/local/bin"
 cat > "$P$PREFIX/env.sh" <<EOF
 # Source this to use the Mesa in $PREFIX (PowerVR Vulkan + Zink OpenGL) instead of Debian's.
@@ -97,7 +101,7 @@ EOF
 chmod +x "$P/usr/local/bin/mesa-jh7110-run"
 cat > "$P/DEBIAN/control" <<EOF
 Package: mesa-jh7110
-Version: $VER-$REV
+Version: $VER-$REV$DREV
 Architecture: riscv64
 Maintainer: linux-drm-jh7110 <noreply@localhost>
 Section: libs
@@ -108,4 +112,4 @@ Description: Mesa $VER for the StarFive JH7110 (PowerVR BXE-4-32 Vulkan + Zink),
  Use: . $PREFIX/env.sh  or  mesa-jh7110-run <program>
 EOF
 mkdir -p "$ROOT/debs"
-fakeroot dpkg-deb --build -Zxz "$P" "$ROOT/debs/mesa-jh7110_${VER}-${REV}_riscv64.deb"
+fakeroot dpkg-deb --build -Zxz "$P" "$ROOT/debs/mesa-jh7110_${VER}-${REV}${DREV}_riscv64.deb"

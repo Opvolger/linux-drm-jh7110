@@ -3,3 +3,4 @@
 /build-riscv64/
 *.tar.xz
 cross-riscv64.ini
+/build-riscv64-dbg/
