@@ -1,137 +1,8 @@
-From mboxrd@z Thu Jan  1 00:00:00 1970
-Received: from bombadil.infradead.org (bombadil.infradead.org
- [198.137.202.133])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest
- SHA256)
-	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CEE08606EE9E
-	for <linux-riscv@archiver.kernel.org>; Fri,  6 Nov 2026 14:00:27 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key,
- unprotected) header.d=lists.infradead.org header.i=@lists.infradead.org
- header.a=rsa-sha256 header.s=bombadil.20210309 header.b=3Ck92wPl;
-	dkim=fail reason="signature verification failed" (1024-bit key,
- unprotected) header.d=samsung.com header.i=@samsung.com header.a=rsa-sha256
- header.s=mail20170921 header.b=lHtCjHhc
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=lists.infradead.org; s=bombadil.20210309; h=Sender:
-	Content-Transfer-Encoding:Content-Type:Cc:List-Subscribe:List-Help:List-Post:
-	List-Archive:List-Unsubscribe:List-Id:References:To:In-Reply-To:Message-Id:
-	MIME-Version:Subject:Date:From:Reply-To:Content-ID:Content-Description:
-	Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID:
-	List-Unsubscribe-Post:List-Owner;
-	bh=vuIKQQh8xFaFzGQBhwsyV+Wq1yy0zJAWctXTGppmk/c=; b=3Ck92wPlnHFWRowqdgSMKrnPVx
-	dBRyzBdIiHLg+X96HP/U57X91lB4aayeY+R9cNO7nRR4fKEuf++rjt5AFf0MUPZxMth+RjsKxaRrt
-	W7yrun2vq3AF0IHGKhTYhhmvH5rGam+Tx1oR+JOMGxP1fjuRRDelZkqRiUKKl4xRI3hSWX36KcdfQ
-	35w7+q3salPuuMrQN36ixy6R87Qx6Pndf1eAREGTt/EGY0CL8aTt7/Ma5O7WZqWU8p5n9HXTxIDwt
-	o66mwpDIKZoG5mWMeMctc79PzHniBEQpxEldwaD9PD/HqIKJhLGUgXAy3XRZO3TTAxxmKRG6Po9iD
-	NKpBr2dw==;
-Received: from localhost ([::1] helo=bombadil.infradead.org)
-	by bombadil.infradead.org with esmtp (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKUK-0000000CYkA-3wDn;
-	Fri, 06 Nov 2026 14:00:16 +0000
-Received: from mailout1.w1.samsung.com ([210.118.77.11])
-	by bombadil.infradead.org with esmtps (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKTX-0000000CX4W-14Zy;
-	Fri, 06 Nov 2026 13:59:40 +0000
-Received: from eucas1p2.samsung.com (unknown [182.198.249.207])
-	by mailout1.w1.samsung.com (KnoxPortal) with ESMTP id
- 20261106135925euoutp016cfd679197bf0ea6ec3ca9bebf5c54cc~leXPzvj3h0203402034euoutp01a;
-	Fri,  6 Nov 2026 13:59:25 +0000 (GMT)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mailout1.w1.samsung.com
- 20261106135925euoutp016cfd679197bf0ea6ec3ca9bebf5c54cc~leXPzvj3h0203402034euoutp01a
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=samsung.com;
-	s=mail20170921; t=1793973565;
-	bh=FN7vvAgWrNMrFzlbNX5xs/SKPU1mY3uajdXHqZZZf9Y=;
-	h=From:Date:Subject:In-Reply-To:To:Cc:References:From;
-	b=lHtCjHhcS80D7v5i4AFY0WF3oSVLNqanHEKG123HIRmNICdtoHRSGGJKZvDS34gy2
-	 6QXfLOKWafSHMWzX0hAMzVvrt7RQPi7qIxeSwR+QPjkZeoxw85DiDZqLJ+j7guPaYH
-	 PhrbKnAs9ZbrY+807iWTDZneJe6WxpL3Ut2jyADc=
-Received: from eusmtip1.samsung.com (unknown [203.254.199.221]) by
-	eucas1p1.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135924eucas1p17cd8d0880486f9e932fe1b81ba3eeaf6~leXPJkijI2296222962eucas1p1V;
-	Fri,  6 Nov 2026 13:59:24 +0000 (GMT)
-Received: from AMDC4942.eu.corp.samsungelectronics.net (unknown
-	[106.210.136.40]) by eusmtip1.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135922eusmtip147a3e72fa4d8c516753bc64f3ec47198~leXNaHRwL0119701197eusmtip1g;
-	Fri,  6 Nov 2026 13:59:22 +0000 (GMT)
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
-Date: Fri, 06 Nov 2026 14:58:52 +0100
-Subject: [PATCH v7 18/19] riscv: dts: starfive: jh7110: Update DT for
- display subsystem
-X-Archived-By: <archiver.kernel.org>
-MIME-Version: 1.0
-Message-Id: <20261106-jh7110-clean-send-v7-18-68f7ea9913db@samsung.com>
-In-Reply-To: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
-To: Neil Armstrong <neil.armstrong@linaro.org>,  Rob Herring
-	<robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>,  Andrzej Hajda
-	<andrzej.hajda@intel.com>, Robert Foss <rfoss@kernel.org>,  Laurent Pinchart
-	<Laurent.pinchart@ideasonboard.com>,  Jonas Karlman <jonas@kwiboo.se>,
-	Jernej Skrabec <jernej.skrabec@gmail.com>,  Luca Ceresoli
-	<luca.ceresoli@bootlin.com>,  Maarten Lankhorst
-	<maarten.lankhorst@linux.intel.com>,  Maxime Ripard <mripard@kernel.org>,
-	Thomas Zimmermann <tzimmermann@suse.de>,  Philipp Zabel
-	<p.zabel@pengutronix.de>,  Emil Renner Berthing <kernel@esmil.dk>,  Hal Feng
-	<hal.feng@starfivetech.com>, Heiko Stuebner <heiko@sntech.de>,  Paul
-	Walmsley <pjw@kernel.org>, Palmer Dabbelt <palmer@dabbelt.com>,  Albert Ou
-	<aou@eecs.berkeley.edu>, Alexandre Ghiti <alex@ghiti.fr>,  Dominique
-	Belhachemi <db@domibel.de>, Andy Yan <andyshrk@163.com>,  David Airlie
-	<airlied@gmail.com>, Simona Vetter <simona@ffwll.ch>,  Yakir Yang
-	<kuankuan.y@gmail.com>,  Dmitry Baryshkov
-	<dmitry.baryshkov@oss.qualcomm.com>,  Michal Wilczynski
-	<m.wilczynski@samsung.com>,  Conor Dooley <conor@kernel.org>, William Qiu
-	<william.qiu@starfivetech.com>,  Xingyu Wu <xingyu.wu@starfivetech.com>,
-	Sandy Huang <hjc@rock-chips.com>,  Manivannan Sadhasivam <mani@kernel.org>
-X-Mailer: b4 0.15-dev
-X-Developer-Signature: v=1; a=openpgp-sha256; l=9910;
-	i=m.wilczynski@samsung.com; h=from:subject:message-id;
-	bh=fpU1fbJ1exXPaemJgInI/IV38hgpPcCwNXHW1x4QuSE=;
-	b=owGbwMvMwCGWumv6zndzRCIZT6slMWS9vSve/a/8+6yEhN4lHyJXXIyfZbvVRd/P6fzzxYvvn
-	bHYr3FQp6OUhUGMg0FWTJHl7MZoI8l/DE/Ljz/+BTOHlQlkCAMXpwBMpPwYI8PGFpGJversCpv8
-	K3f7fH83913kiwffrvTd9mtXDDP8cTWd4TfLzjC2hVzVxr5LgkQ92res/f+C/a7Xewarhdc95n5
-	7ksQHAA==
-X-Developer-Key: i=m.wilczynski@samsung.com; a=openpgp;
-	fpr=CDB15B3219FE00E577C7E3FA65BA97B9EE9C1459
-X-CMS-MailID: 20261106135924eucas1p17cd8d0880486f9e932fe1b81ba3eeaf6
-X-Msg-Generator: CA
-X-RootMTR: 20261106135924eucas1p17cd8d0880486f9e932fe1b81ba3eeaf6
-X-EPHeader: CA
-X-CMS-RootMailID: 20261106135924eucas1p17cd8d0880486f9e932fe1b81ba3eeaf6
-References: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
-	<CGME20261106135924eucas1p17cd8d0880486f9e932fe1b81ba3eeaf6@eucas1p1.samsung.com>
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.9.0 (BSD) ) MR-646709E3 
-X-CRM114-CacheID: sfid-20261106_055928_635591_D15F65FB 
-X-CRM114-Status: GOOD (  17.16  )
-X-Spam-Score: -4.4 (----)
-X-BeenThere: linux-riscv@lists.infradead.org
-X-Mailman-Version: 2.1.34
-Precedence: list
-List-Id: <linux-riscv.lists.infradead.org>
-List-Archive: <http://lists.infradead.org/pipermail/linux-riscv/>
-List-Post: <mailto:linux-riscv@lists.infradead.org>
-List-Help: <mailto:linux-riscv-request@lists.infradead.org?subject=help>
-List-Subscribe: <http://lists.infradead.org/mailman/listinfo/linux-riscv>,
- <mailto:linux-riscv-request@lists.infradead.org?subject=subscribe>
-Cc: Joshua Peisach <jpeisach@ubuntu.com>, devicetree@vger.kernel.org,
- linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
- Chaoyi Chen <chaoyi.chen@rock-chips.com>,
- Maud Spierings <maud_spierings@murena.io>,
- linux-rockchip@lists.infradead.org, Icenowy Zheng <zhengxingda@iscas.ac.cn>,
- Byron Stanoszek <gandalf@winds.org>,
- =?utf-8?q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>,
- linux-riscv@lists.infradead.org, Graham Markall <hello@big-grey.co.uk>,
- OOHehir <oo.hehir@gmail.com>, linux-arm-kernel@lists.infradead.org,
- Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Sender: "linux-riscv" <linux-riscv-bounces@lists.infradead.org>
-X-Spam-Status: No, score=-16.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_EF,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no version=4.0.1
-X-Spam-Checker-Version: SpamAssassin 4.0.1 (2024-03-26) on
-	aws-us-west-2-korg-listserv-alma10-1
+Date: Fri, 6 Nov 2026 14:58:52 +0100
+Subject: [PATCH 23/38] riscv: dts: starfive: jh7110: Update DT for display
+ subsystem
 
 Activate the display subsystem by describing the video output subsystem,
 which the documentation calls dom_vout_top, as a bus node covering the
@@ -167,12 +38,12 @@ Tested-by: Byron Stanoszek <gandalf@winds.org>
 Tested-by: OOHehir <oo.hehir@gmail.com>
 Signed-off-by: Michal Wilczynski <m.wilczynski@samsung.com>
 ---
- arch/riscv/boot/dts/starfive/jh7110-common.dtsi | 121 +++++++++++++++++++++++-
- arch/riscv/boot/dts/starfive/jh7110.dtsi        | 105 ++++++++++++++++----
+ .../boot/dts/starfive/jh7110-common.dtsi      | 121 +++++++++++++++++-
+ arch/riscv/boot/dts/starfive/jh7110.dtsi      | 105 ++++++++++++---
  2 files changed, 203 insertions(+), 23 deletions(-)
 
 diff --git a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi b/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
-index 64de468f2c31764bc5eeb91156c37c7adf296308..bfc7ae12822348777cde9b2f2c939e58a629e750 100644
+index 64de468f2..bfc7ae128 100644
 --- a/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 +++ b/arch/riscv/boot/dts/starfive/jh7110-common.dtsi
 @@ -33,6 +33,27 @@ memory@40000000 {
@@ -335,7 +206,7 @@ index 64de468f2c31764bc5eeb91156c37c7adf296308..bfc7ae12822348777cde9b2f2c939e58
 +	status = "okay";
 +};
 diff --git a/arch/riscv/boot/dts/starfive/jh7110.dtsi b/arch/riscv/boot/dts/starfive/jh7110.dtsi
-index 82ea63f715b0e64f33345e142eaba6ce49eaebf6..ac10d79770f24982e4046abb0030d6a3a23209bd 100644
+index 82ea63f71..ac10d7977 100644
 --- a/arch/riscv/boot/dts/starfive/jh7110.dtsi
 +++ b/arch/riscv/boot/dts/starfive/jh7110.dtsi
 @@ -290,12 +290,6 @@ gmac1_rmii_refin: gmac1-rmii-refin-clock {
@@ -465,12 +336,3 @@ index 82ea63f715b0e64f33345e142eaba6ce49eaebf6..ac10d79770f24982e4046abb0030d6a3
  		};
  
  		pcie0: pcie@940000000 {
-
--- 
-2.34.1
-
-
-_______________________________________________
-linux-riscv mailing list
-linux-riscv@lists.infradead.org
-http://lists.infradead.org/mailman/listinfo/linux-riscv

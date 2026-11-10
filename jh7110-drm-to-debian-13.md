@@ -32,7 +32,7 @@
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
 | Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
-| GPU (IMG BXE-4-32, `drm/imagination`) | ⏳ | |
+| GPU (IMG BXE-4-32, `drm/imagination`) | 🔧 | domibel's patches rebased on 7.4-rc1; firmware deb installed |
 | Mesa (PowerVR Vulkan + Zink) | 🔧 | Mesa 26.3.0 cross-built: `debs/mesa-jh7110_26.3.0-1_riscv64.deb` (in /opt, not installed yet) |
 | Half-Life 2 | ⏳ | |
 | Rollback how-to tested | ⏳ | |
@@ -56,7 +56,11 @@
 
 ```text
 Makefile                  make checkout-7.4 / config-7.4 / deb-7.4 / export-7.4 (make help)
-linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series v7 (from lore)
+linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series v7 (from lore),
+                          0025-0028 XPbmtUC errata (Samuel Holland ALTERNATIVE_3 + Bo Gan),
+                          0029-0038 PowerVR BXE-4-32 bring-up (domibel, rebased on 7.4-rc1)
+mesa/                     Dockerfile + build.sh: Mesa cross-build -> debs/mesa-jh7110_*.deb (/opt)
+scripts/firmware-deb.sh   debs/powervr-firmware-jh7110_*.deb (pinned BXE-4-32 firmware)
 configs/debian/           Debian config of the board (7.1.7 backports), base for our config
 scripts/kernel-tree.sh    worktree linux-7.4/ of .kernel.git (shallow, tag v7.4-rc1) + git am
 scripts/make-config.sh    Debian config -> build/7.4/obj/.config (+ display options, no debug info)
@@ -281,6 +285,14 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 21:55**: Phase B started. Cherry-picked from github.com/domibel/linux onto 7.4-rc1:
+  Samuel Holland's ALTERNATIVE_3 (conflict: 7.4 dropped the !CONFIG_RISCV_ALTERNATIVE branch →
+  keep only the real define), "auipc+load pair" (conflict: 7.4 added an `early` arg → kept),
+  Bo Gan's XPbmtUC errata (conflict with the new `mal-9092` sifive erratum → both kept: MAL_9092=2,
+  XPBMTUC=3, NUMBER=4), then 10 of domibel's 12 GPU commits. Skipped: the vout clk patch (already
+  in 7.4-rc1 as af384d6e0573) and 2 pvr_vm remap fixes (already fixed upstream in 7.4). Config:
+  `DRM_POWERVR=m ERRATA_SIFIVE_XPBMTUC=y STARFIVE_STARLINK_CACHE=y RISCV_NONSTANDARD_CACHE_OPS=y`.
+  Firmware deb + Mesa 26.3 (/opt) installed on the board.
 - **2026-11-10 21:47**: ✅ **Phase A done.** 7.4.0-rc1-jh7110 boots via `/boot.scr`; DRM
   `verisilicon` card0, HDMI-A-1 connected, EDID read, fbcon visible. SDDM greeter crashed → software
   Qt Quick + autologin. kwin_wayland: atomic test fails (EINVAL) → `KWIN_DRM_NO_AMS=1` → Plasma

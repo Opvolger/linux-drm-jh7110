@@ -6,6 +6,7 @@
 #   - other RISC-V SoC families off (only StarFive + generic VIRT stay);
 #   - no debug info (smaller modules: the board's root fs is nearly full, faster build);
 #   - own release name, module signing with a key generated at build time;
+#   - PowerVR GPU + XPbmtUC errata (see below);
 #   - JH7110 display stack (Verisilicon DC8200, Innosilicon HDMI bridge + PHY,
 #     vout/hdmi subsystem drivers) as modules;
 #   - options new since the Debian config get their default (olddefconfig).
@@ -45,8 +46,13 @@ cfg -m DRM -m DRM_VERISILICON_DC -m DRM_INNO_HDMI \
 	-m DRM_STARFIVE_JH7110_INNO_HDMI -m PHY_STARFIVE_JH7110_INNO_HDMI \
 	-m SOC_STARFIVE_JH7110_HDMI_SUBSYSTEM -m SOC_STARFIVE_JH7110_VOUT_SUBSYSTEM \
 	-e DRM_FBDEV_EMULATION -e FRAMEBUFFER_CONSOLE
+# GPU (PowerVR BXE-4-32, out-of-tree bring-up by domibel): uncached mappings through the
+# XPbmtUC "errata" (Svpbmt emulation via the uncached memory alias of the JH7110).
+# STARFIVE_STARLINK_CACHE is only there to pull in RISCV_NONSTANDARD_CACHE_OPS.
+cfg -m DRM_POWERVR -e ERRATA_SIFIVE -e ERRATA_SIFIVE_XPBMTUC \
+	-e STARFIVE_STARLINK_CACHE -e RISCV_NONSTANDARD_CACHE_OPS
 
 "${KMAKE[@]}" olddefconfig
 
 # Report what the display options ended up as
-grep -E "CONFIG_(DRM_VERISILICON|DRM_INNO|DRM_STARFIVE|PHY_STARFIVE|PHY_INNO|SOC_STARFIVE|ARCH_STARFIVE|DEBUG_INFO_NONE|DRM_POWERVR)" "$B/.config" || true
+grep -E "CONFIG_(DRM_VERISILICON|DRM_INNO|DRM_STARFIVE|PHY_STARFIVE|PHY_INNO|SOC_STARFIVE|ARCH_STARFIVE|DEBUG_INFO_NONE|DRM_POWERVR|ERRATA_SIFIVE|STARFIVE_STARLINK|RISCV_NONSTANDARD_CACHE)" "$B/.config" || true

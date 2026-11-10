@@ -1,138 +1,7 @@
-From mboxrd@z Thu Jan  1 00:00:00 1970
-Received: from bombadil.infradead.org (bombadil.infradead.org
- [198.137.202.133])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest
- SHA256)
-	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F0AFC606D838
-	for <linux-rockchip@archiver.kernel.org>;
- Fri,  6 Nov 2026 14:00:32 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key,
- unprotected) header.d=lists.infradead.org header.i=@lists.infradead.org
- header.a=rsa-sha256 header.s=bombadil.20210309 header.b=GegkK0xY;
-	dkim=fail reason="signature verification failed" (1024-bit key,
- unprotected) header.d=samsung.com header.i=@samsung.com header.a=rsa-sha256
- header.s=mail20170921 header.b=Grg9PPHc
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=lists.infradead.org; s=bombadil.20210309; h=Sender:
-	Content-Transfer-Encoding:Content-Type:Cc:List-Subscribe:List-Help:List-Post:
-	List-Archive:List-Unsubscribe:List-Id:References:To:In-Reply-To:Message-Id:
-	MIME-Version:Subject:Date:From:Reply-To:Content-ID:Content-Description:
-	Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID:
-	List-Unsubscribe-Post:List-Owner;
-	bh=QAd97Sr5iq9sRlCN5GHneFxrWFLV+YwD36W5ZqGwHvY=; b=GegkK0xYTEF1jhiZKzSchZRY/q
-	0i5RUYYBvnTg8zRIiqaTV2FWkSNM45NFaN4F6vWVZzHTdVS0crMbLKgg6zATaN0ast7usez9aqQV9
-	uvN/4cQOB91nLwtxn1qCdUWzRf/Jd+sqX9rt95wYUPOa+WGu8gNW3HFjx+AmWWWL2zkTC7eV+wCSj
-	4kUAWu+BhyJ5c3dMSMILVzMkurN2mKgB2dwKTQzcfHLUKKPsS1nEi3dtNczN6Pf+xgN5u9oHJBiFb
-	hKf9joR0Q+NdajqFmF2RAaDK6v5UxN+rVG6hOGbZFNM8Ev/xlA49zsbPTOGavDwpGNCPvwlHc1eo6
-	NswXvRFw==;
-Received: from localhost ([::1] helo=bombadil.infradead.org)
-	by bombadil.infradead.org with esmtp (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKUV-0000000CZ0c-25kh;
-	Fri, 06 Nov 2026 14:00:27 +0000
-Received: from mailout1.w1.samsung.com ([210.118.77.11])
-	by bombadil.infradead.org with esmtps (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKTR-0000000CWqu-15ci;
-	Fri, 06 Nov 2026 13:59:31 +0000
-Received: from eucas1p2.samsung.com (unknown [182.198.249.207])
-	by mailout1.w1.samsung.com (KnoxPortal) with ESMTP id
- 20261106135919euoutp01175cf02a6cfa465b5bdabed02e0cfc5b~leXJ-9s9V0202802028euoutp01R;
-	Fri,  6 Nov 2026 13:59:19 +0000 (GMT)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mailout1.w1.samsung.com
- 20261106135919euoutp01175cf02a6cfa465b5bdabed02e0cfc5b~leXJ-9s9V0202802028euoutp01R
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=samsung.com;
-	s=mail20170921; t=1793973559;
-	bh=j6qsKPVa4vIDomggJlc0kFgzT2/GZNlTpXfmDOsCz+I=;
-	h=From:Date:Subject:In-Reply-To:To:Cc:References:From;
-	b=Grg9PPHcztF2L9xqNyiviQq0rFfWA/uPu98hR5wYh1JKNTpHqswX7fChQ6/jYVqdI
-	 hrXTtWcMXD5bGqBAlLnnMDmuv6d6aR65oG3fz8jxdC2WWWDylDowL2BqqEio0eD4tu
-	 8Su46dOAWxmk3IjjHRiCPg4FMpUdrTWa51WYzLEo=
-Received: from eusmtip1.samsung.com (unknown [203.254.199.221]) by
-	eucas1p1.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135918eucas1p1a3d7684adcefdc624b9748469d07e88c~leXJpQaYx2808228082eucas1p1J;
-	Fri,  6 Nov 2026 13:59:18 +0000 (GMT)
-Received: from AMDC4942.eu.corp.samsungelectronics.net (unknown
-	[106.210.136.40]) by eusmtip1.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135917eusmtip1f0852a48b9c0bbff5c9318fd54b04f07~leXH7bxJY0950209502eusmtip1g;
-	Fri,  6 Nov 2026 13:59:16 +0000 (GMT)
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
-Date: Fri, 06 Nov 2026 14:58:49 +0100
-Subject: [PATCH v7 15/19] soc: starfive: Add jh7110-hdmi-subsystem driver
-X-Archived-By: <archiver.kernel.org>
-MIME-Version: 1.0
-Message-Id: <20261106-jh7110-clean-send-v7-15-68f7ea9913db@samsung.com>
-In-Reply-To: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
-To: Neil Armstrong <neil.armstrong@linaro.org>,  Rob Herring
-	<robh@kernel.org>, Krzysztof Kozlowski <krzk+dt@kernel.org>,  Andrzej Hajda
-	<andrzej.hajda@intel.com>, Robert Foss <rfoss@kernel.org>,  Laurent Pinchart
-	<Laurent.pinchart@ideasonboard.com>,  Jonas Karlman <jonas@kwiboo.se>,
-	Jernej Skrabec <jernej.skrabec@gmail.com>,  Luca Ceresoli
-	<luca.ceresoli@bootlin.com>,  Maarten Lankhorst
-	<maarten.lankhorst@linux.intel.com>,  Maxime Ripard <mripard@kernel.org>,
-	Thomas Zimmermann <tzimmermann@suse.de>,  Philipp Zabel
-	<p.zabel@pengutronix.de>,  Emil Renner Berthing <kernel@esmil.dk>,  Hal Feng
-	<hal.feng@starfivetech.com>, Heiko Stuebner <heiko@sntech.de>,  Paul
-	Walmsley <pjw@kernel.org>, Palmer Dabbelt <palmer@dabbelt.com>,  Albert Ou
-	<aou@eecs.berkeley.edu>, Alexandre Ghiti <alex@ghiti.fr>,  Dominique
-	Belhachemi <db@domibel.de>, Andy Yan <andyshrk@163.com>,  David Airlie
-	<airlied@gmail.com>, Simona Vetter <simona@ffwll.ch>,  Yakir Yang
-	<kuankuan.y@gmail.com>,  Dmitry Baryshkov
-	<dmitry.baryshkov@oss.qualcomm.com>,  Michal Wilczynski
-	<m.wilczynski@samsung.com>,  Conor Dooley <conor@kernel.org>, William Qiu
-	<william.qiu@starfivetech.com>,  Xingyu Wu <xingyu.wu@starfivetech.com>,
-	Sandy Huang <hjc@rock-chips.com>,  Manivannan Sadhasivam <mani@kernel.org>
-X-Mailer: b4 0.15-dev
-X-Developer-Signature: v=1; a=openpgp-sha256; l=5200;
-	i=m.wilczynski@samsung.com; h=from:subject:message-id;
-	bh=iiFRaoOKHGzbZxqSu9tLfi3f/k9iprW4kTLpeDQLel0=;
-	b=owGbwMvMwCGWumv6zndzRCIZT6slMWS9vSueqCkQ7Xwi8KXlFkm17KNtEYmbIzMuPtd9+4a9V
-	tHJW3ljRykLgxgHg6yYIsvZjdFGkv8YnpYff/wLZg4rE8gQBi5OAZhIxmmGvyKXF7+fPH+ylzfD
-	v48qVlMkZ3u4X5jcl7E2firHC5GgZxcZGVavTf/RtzYmkOX2gUKpBycepkZcbzhbe0rktw5/64s
-	wZjYA
-X-Developer-Key: i=m.wilczynski@samsung.com; a=openpgp;
-	fpr=CDB15B3219FE00E577C7E3FA65BA97B9EE9C1459
-X-CMS-MailID: 20261106135918eucas1p1a3d7684adcefdc624b9748469d07e88c
-X-Msg-Generator: CA
-X-RootMTR: 20261106135918eucas1p1a3d7684adcefdc624b9748469d07e88c
-X-EPHeader: CA
-X-CMS-RootMailID: 20261106135918eucas1p1a3d7684adcefdc624b9748469d07e88c
-References: <20261106-jh7110-clean-send-v7-0-68f7ea9913db@samsung.com>
-	<CGME20261106135918eucas1p1a3d7684adcefdc624b9748469d07e88c@eucas1p1.samsung.com>
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.9.0 (BSD) ) MR-646709E3 
-X-CRM114-CacheID: sfid-20261106_055921_695485_FAAFF1A7 
-X-CRM114-Status: GOOD (  23.12  )
-X-Spam-Score: -4.4 (----)
-X-BeenThere: linux-rockchip@lists.infradead.org
-X-Mailman-Version: 2.1.34
-Precedence: list
-List-Id: Upstream kernel work for Rockchip platforms
- <linux-rockchip.lists.infradead.org>
-List-Archive: <http://lists.infradead.org/pipermail/linux-rockchip/>
-List-Post: <mailto:linux-rockchip@lists.infradead.org>
-List-Help: <mailto:linux-rockchip-request@lists.infradead.org?subject=help>
-List-Subscribe: <http://lists.infradead.org/mailman/listinfo/linux-rockchip>,
- <mailto:linux-rockchip-request@lists.infradead.org?subject=subscribe>
-Cc: Joshua Peisach <jpeisach@ubuntu.com>, devicetree@vger.kernel.org,
- linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
- Chaoyi Chen <chaoyi.chen@rock-chips.com>,
- Maud Spierings <maud_spierings@murena.io>,
- linux-rockchip@lists.infradead.org, Icenowy Zheng <zhengxingda@iscas.ac.cn>,
- Byron Stanoszek <gandalf@winds.org>,
- =?utf-8?q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@baylibre.com>,
- linux-riscv@lists.infradead.org, Graham Markall <hello@big-grey.co.uk>,
- OOHehir <oo.hehir@gmail.com>, linux-arm-kernel@lists.infradead.org,
- Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Sender: "Linux-rockchip" <linux-rockchip-bounces@lists.infradead.org>
-X-Spam-Status: No, score=-16.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_EF,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no version=4.0.1
-X-Spam-Checker-Version: SpamAssassin 4.0.1 (2024-03-26) on
-	aws-us-west-2-korg-listserv-alma10-1
+Date: Fri, 6 Nov 2026 14:58:49 +0100
+Subject: [PATCH 20/38] soc: starfive: Add jh7110-hdmi-subsystem driver
 
 Add the parent driver for the monolithic JH7110 HDMI IP block.
 
@@ -153,13 +22,14 @@ Tested-by: Byron Stanoszek <gandalf@winds.org>
 Tested-by: OOHehir <oo.hehir@gmail.com>
 Signed-off-by: Michal Wilczynski <m.wilczynski@samsung.com>
 ---
- drivers/soc/starfive/Kconfig                 | 18 +++++++
+ drivers/soc/starfive/Kconfig                 | 18 +++++
  drivers/soc/starfive/Makefile                |  1 +
- drivers/soc/starfive/jh7110-hdmi-subsystem.c | 72 ++++++++++++++++++++++++++++
+ drivers/soc/starfive/jh7110-hdmi-subsystem.c | 72 ++++++++++++++++++++
  3 files changed, 91 insertions(+)
+ create mode 100644 drivers/soc/starfive/jh7110-hdmi-subsystem.c
 
 diff --git a/drivers/soc/starfive/Kconfig b/drivers/soc/starfive/Kconfig
-index 04b020083d3eecd7754bb2e2ec1b4fc8f525a344..e19994a212d4af49eaed595bab6fecc19677b2b3 100644
+index 04b020083..e19994a21 100644
 --- a/drivers/soc/starfive/Kconfig
 +++ b/drivers/soc/starfive/Kconfig
 @@ -3,4 +3,22 @@ menu "StarFive SoC (System On Chip) specific Drivers"
@@ -186,7 +56,7 @@ index 04b020083d3eecd7754bb2e2ec1b4fc8f525a344..e19994a212d4af49eaed595bab6fecc1
 +
  endmenu
 diff --git a/drivers/soc/starfive/Makefile b/drivers/soc/starfive/Makefile
-index ca1e609b81045f5e11daf249c116b22c8dc0e4d0..36fbb6f984986e4794ffb2c6c1485b6644efc4eb 100644
+index ca1e609b8..36fbb6f98 100644
 --- a/drivers/soc/starfive/Makefile
 +++ b/drivers/soc/starfive/Makefile
 @@ -1,2 +1,3 @@
@@ -195,7 +65,7 @@ index ca1e609b81045f5e11daf249c116b22c8dc0e4d0..36fbb6f984986e4794ffb2c6c1485b66
 +obj-$(CONFIG_SOC_STARFIVE_JH7110_HDMI_SUBSYSTEM) += jh7110-hdmi-subsystem.o
 diff --git a/drivers/soc/starfive/jh7110-hdmi-subsystem.c b/drivers/soc/starfive/jh7110-hdmi-subsystem.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..b01dc66450f516599c013df0383e6fde987f390e
+index 000000000..b01dc6645
 --- /dev/null
 +++ b/drivers/soc/starfive/jh7110-hdmi-subsystem.c
 @@ -0,0 +1,72 @@
@@ -271,12 +141,3 @@ index 0000000000000000000000000000000000000000..b01dc66450f516599c013df0383e6fde
 +MODULE_AUTHOR("Michal Wilczynski <m.wilczynski@samsung.com>");
 +MODULE_DESCRIPTION("StarFive JH7110 HDMI subsystem Driver");
 +MODULE_LICENSE("GPL");
-
--- 
-2.34.1
-
-
-_______________________________________________
-Linux-rockchip mailing list
-Linux-rockchip@lists.infradead.org
-http://lists.infradead.org/mailman/listinfo/linux-rockchip

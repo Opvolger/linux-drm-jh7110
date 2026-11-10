@@ -1,122 +1,7 @@
-From mboxrd@z Thu Jan  1 00:00:00 1970
-Received: from bombadil.infradead.org (bombadil.infradead.org
- [198.137.202.133])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest
- SHA256)
-	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3B355606A336
-	for <linux-phy@archiver.kernel.org>; Fri,  6 Nov 2026 13:55:25 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key,
- unprotected) header.d=lists.infradead.org header.i=@lists.infradead.org
- header.a=rsa-sha256 header.s=bombadil.20210309 header.b=LrRoGJHz;
-	dkim=fail reason="signature verification failed" (1024-bit key,
- unprotected) header.d=samsung.com header.i=@samsung.com header.a=rsa-sha256
- header.s=mail20170921 header.b=bTejkQ27
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-	d=lists.infradead.org; s=bombadil.20210309; h=Sender:
-	Content-Transfer-Encoding:Content-Type:List-Subscribe:List-Help:List-Post:
-	List-Archive:List-Unsubscribe:List-Id:References:Cc:To:In-Reply-To:Message-Id
-	:MIME-Version:Subject:Date:From:Reply-To:Content-ID:Content-Description:
-	Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc:Resent-Message-ID:
-	List-Unsubscribe-Post:List-Owner;
-	bh=I+e/E9865xj8KH+M0AVkNdfLI/Acz57yriFIB9sHBYw=; b=LrRoGJHz5uCIQarbGfW3UljESg
-	OFj7eIN4/tBJIitasvFfTGjEXhHmlnvcr2xkhpz90PG3psJVbMlOcOdp1sjQdPFSbLciGc03XPOEX
-	gUk7o+vG8W4ZrwP/8KfmNy9TB34kB6wfyWUyQMSPCjIhNwzJxQDUt6+d0YJ8HROV6LJst0/Yzi+so
-	qytV6IEOKRlIp+BddQT0NltveC0WUQfte2kMtOrrlfSta1OdU3aQYOY8FH4Drq9pzUHLpIO0DkXMo
-	2keKyfLVsmtdLG4iWMeMDxWKLxhAast19ChMGbqxPH8T7rm2kfn1ciAamYEsmTLkHDLf69vbdjGU4
-	mh+uX9PQ==;
-Received: from localhost ([::1] helo=bombadil.infradead.org)
-	by bombadil.infradead.org with esmtp (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKPc-0000000CV3G-3ZXa;
-	Fri, 06 Nov 2026 13:55:24 +0000
-Received: from mailout1.w1.samsung.com ([210.118.77.11])
-	by bombadil.infradead.org with esmtps (Exim 4.100.1 #2 (Red Hat Linux))
-	id 1xPKPN-0000000CUjB-0R5o
-	for linux-phy@lists.infradead.org;
-	Fri, 06 Nov 2026 13:55:16 +0000
-Received: from eucas1p1.samsung.com (unknown [182.198.249.206])
-	by mailout1.w1.samsung.com (KnoxPortal) with ESMTP id
- 20261106135507euoutp011e9a851b8c47ed292fe895b02c5dbeb8~leTfqVxtP0072500725euoutp012
-	for <linux-phy@lists.infradead.org>; Fri,  6 Nov 2026 13:55:07 +0000 (GMT)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mailout1.w1.samsung.com
- 20261106135507euoutp011e9a851b8c47ed292fe895b02c5dbeb8~leTfqVxtP0072500725euoutp012
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=samsung.com;
-	s=mail20170921; t=1793973307;
-	bh=DK9I+N1cTBZ555CNWxqN36SxU/PNZkkDmI4hDAIyh8Y=;
-	h=From:Date:Subject:In-Reply-To:To:Cc:References:From;
-	b=bTejkQ27Rx2vxtRL3dqlhslBYWgvVnHxr2YttFiaStUlNoXMScbZQQoV+vzLOyZt8
-	 oj3DiVGeE6e7zh6uW1igIAUccpwbxru9Ufmjqn6idbfgoUMKI9OOV7Xp8M1UdY+BAM
-	 9okMWV1+PI+S+TqsXHJhbSrIRkhcSsM6KVuzYUko=
-Received: from eusmtip2.samsung.com (unknown [203.254.199.222]) by
-	eucas1p2.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135506eucas1p228bf1f8e1cacdc716e6bf22b847f49d9~leTezPPe10626106261eucas1p2K;
-	Fri,  6 Nov 2026 13:55:06 +0000 (GMT)
-Received: from AMDC4942.eu.corp.samsungelectronics.net (unknown
-	[106.210.136.40]) by eusmtip2.samsung.com (KnoxPortal) with ESMTPA id
-	20261106135505eusmtip2c0314735124030e2a1b795b9099e44d2~leTd6X_2k2742627426eusmtip2M;
-	Fri,  6 Nov 2026 13:55:05 +0000 (GMT)
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
-Date: Fri, 06 Nov 2026 14:53:00 +0100
-Subject: [PATCH v7 2/5] phy: Add common Innosilicon HDMI PHY helpers
-X-Archived-By: <archiver.kernel.org>
-MIME-Version: 1.0
-Message-Id: <20261106-jh7110-inno-hdmi-phy-v7-2-d49368303800@samsung.com>
-In-Reply-To: <20261106-jh7110-inno-hdmi-phy-v7-0-d49368303800@samsung.com>
-To: Vinod Koul <vkoul@kernel.org>,  Neil Armstrong
-	<neil.armstrong@linaro.org>,  Manivannan Sadhasivam <mani@kernel.org>, Rob
-	Herring <robh@kernel.org>,  Krzysztof Kozlowski <krzk+dt@kernel.org>,  Conor
-	Dooley <conor+dt@kernel.org>, Heiko Stuebner <heiko@sntech.de>,  Emil Renner
-	Berthing <kernel@esmil.dk>,  Hal Feng <hal.feng@starfivetech.com>, Dominique
-	Belhachemi <db@domibel.de>,  Michal Wilczynski <m.wilczynski@samsung.com>,
-	Andy Yan <andyshrk@163.com>
-Cc: linux-phy@lists.infradead.org, devicetree@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-rockchip@lists.infradead.org, linux-riscv@lists.infradead.org,  Marek
-	Szyprowski <m.szyprowski@samsung.com>,  Icenowy Zheng
-	<zhengxingda@iscas.ac.cn>,  Chaoyi Chen <chaoyi.chen@rock-chips.com>,
-	Joshua Peisach <jpeisach@ubuntu.com>, Byron Stanoszek <gandalf@winds.org>,
-	OOHehir <oo.hehir@gmail.com>
-X-Mailer: b4 0.15-dev
-X-Developer-Signature: v=1; a=openpgp-sha256; l=17486;
-	i=m.wilczynski@samsung.com; h=from:subject:message-id;
-	bh=qC6Oj1ckERpRhCKSTbXXyJto07L7jNIzV0QIP7XgkRs=;
-	b=owGbwMvMwCGWumv6zndzRCIZT6slMWS9vWNeVVsd1K1jYH52gf0TeYG6FUZiL2fYPjh6Iewjw
-	/YO3psHOkpZGMQ4GGTFFFnObow2kvzH8LT8+ONfMHNYmUCGMHBxCsBEnl1h+O9rEtu/JO0r56KD
-	rDqnRNo2r5V1/st875efuHPxN64WXUdGhvYdk57OZjaaGdj07GjB7gV/X+tFf7gwa82WiypX/gd
-	PuMgJAA==
-X-Developer-Key: i=m.wilczynski@samsung.com; a=openpgp;
-	fpr=CDB15B3219FE00E577C7E3FA65BA97B9EE9C1459
-X-CMS-MailID: 20261106135506eucas1p228bf1f8e1cacdc716e6bf22b847f49d9
-X-Msg-Generator: CA
-X-RootMTR: 20261106135506eucas1p228bf1f8e1cacdc716e6bf22b847f49d9
-X-EPHeader: CA
-X-CMS-RootMailID: 20261106135506eucas1p228bf1f8e1cacdc716e6bf22b847f49d9
-References: <20261106-jh7110-inno-hdmi-phy-v7-0-d49368303800@samsung.com>
-	<CGME20261106135506eucas1p228bf1f8e1cacdc716e6bf22b847f49d9@eucas1p2.samsung.com>
-X-CRM114-Version: 20100106-BlameMichelson ( TRE 0.9.0 (BSD) ) MR-646709E3 
-X-CRM114-CacheID: sfid-20261106_055509_850970_46D53F53 
-X-CRM114-Status: GOOD (  26.49  )
-X-Spam-Score: -4.4 (----)
-X-BeenThere: linux-phy@lists.infradead.org
-X-Mailman-Version: 2.1.34
-Precedence: list
-List-Id: Linux Phy Mailing list <linux-phy.lists.infradead.org>
-List-Archive: <http://lists.infradead.org/pipermail/linux-phy/>
-List-Post: <mailto:linux-phy@lists.infradead.org>
-List-Help: <mailto:linux-phy-request@lists.infradead.org?subject=help>
-List-Subscribe: <https://lists.infradead.org/mailman/listinfo/linux-phy>,
- <mailto:linux-phy-request@lists.infradead.org?subject=subscribe>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Sender: "linux-phy" <linux-phy-bounces@lists.infradead.org>
-X-Spam-Status: No, score=-16.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_EF,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no version=4.0.1
-X-Spam-Checker-Version: SpamAssassin 4.0.1 (2024-03-26) on
-	aws-us-west-2-korg-listserv-alma10-1
+Date: Fri, 6 Nov 2026 14:53:00 +0100
+Subject: [PATCH 02/38] phy: Add common Innosilicon HDMI PHY helpers
 
 The Innosilicon HDMI PHY IP is used by several SoCs. They differ in
 where the PHY register block sits in the register space and in which
@@ -140,12 +25,14 @@ Signed-off-by: Michal Wilczynski <m.wilczynski@samsung.com>
 ---
  drivers/phy/Kconfig               |   8 +
  drivers/phy/Makefile              |   1 +
- drivers/phy/phy-inno-hdmi.c       | 358 ++++++++++++++++++++++++++++++++++++++
- include/linux/phy/inno-hdmi-phy.h |  88 ++++++++++
+ drivers/phy/phy-inno-hdmi.c       | 358 ++++++++++++++++++++++++++++++
+ include/linux/phy/inno-hdmi-phy.h |  88 ++++++++
  4 files changed, 455 insertions(+)
+ create mode 100644 drivers/phy/phy-inno-hdmi.c
+ create mode 100644 include/linux/phy/inno-hdmi-phy.h
 
 diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 105fbe408aa25b35a3d4bad152f07740038da25a..46349120122ade027d50aaf2a240b23945134c10 100644
+index 105fbe408..463491201 100644
 --- a/drivers/phy/Kconfig
 +++ b/drivers/phy/Kconfig
 @@ -168,6 +168,14 @@ config PHY_XGENE
@@ -164,7 +51,7 @@ index 105fbe408aa25b35a3d4bad152f07740038da25a..46349120122ade027d50aaf2a240b239
  source "drivers/phy/amlogic/Kconfig"
  source "drivers/phy/apple/Kconfig"
 diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index c6dd02003bbe9d3c5c41bdef8caacc7939a58776..2c34e3aaafdbfe0029474e7f571ea2b8044f239a 100644
+index c6dd02003..2c34e3aaa 100644
 --- a/drivers/phy/Makefile
 +++ b/drivers/phy/Makefile
 @@ -7,6 +7,7 @@ obj-$(CONFIG_PHY_COMMON_PROPS)		+= phy-common-props.o
@@ -177,7 +64,7 @@ index c6dd02003bbe9d3c5c41bdef8caacc7939a58776..2c34e3aaafdbfe0029474e7f571ea2b8
  obj-$(CONFIG_PHY_ECONET_PCIE)		+= phy-econet-pcie.o
 diff --git a/drivers/phy/phy-inno-hdmi.c b/drivers/phy/phy-inno-hdmi.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..6900d4d83e46489e4bc47c5688421a3c0b9a2370
+index 000000000..6900d4d83
 --- /dev/null
 +++ b/drivers/phy/phy-inno-hdmi.c
 @@ -0,0 +1,358 @@
@@ -541,7 +428,7 @@ index 0000000000000000000000000000000000000000..6900d4d83e46489e4bc47c5688421a3c
 +MODULE_LICENSE("GPL");
 diff --git a/include/linux/phy/inno-hdmi-phy.h b/include/linux/phy/inno-hdmi-phy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..3fe0d965da1f32fc2ac8f871167c0c17045f4642
+index 000000000..3fe0d965d
 --- /dev/null
 +++ b/include/linux/phy/inno-hdmi-phy.h
 @@ -0,0 +1,88 @@
@@ -633,12 +520,3 @@ index 0000000000000000000000000000000000000000..3fe0d965da1f32fc2ac8f871167c0c17
 +				      unsigned int timeout_us);
 +
 +#endif /* __PHY_INNO_HDMI_H__ */
-
--- 
-2.34.1
-
-
--- 
-linux-phy mailing list
-linux-phy@lists.infradead.org
-https://lists.infradead.org/mailman/listinfo/linux-phy

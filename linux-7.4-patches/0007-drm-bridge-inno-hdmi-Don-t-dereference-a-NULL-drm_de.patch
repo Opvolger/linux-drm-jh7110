@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michal Wilczynski <m.wilczynski@samsung.com>
+Date: Fri, 6 Nov 2026 14:58:36 +0100
+Subject: [PATCH 07/38] drm/bridge: inno-hdmi: Don't dereference a NULL
+ drm_device on hotplug
+
+inno_hdmi_irq() passes hdmi->bridge.dev to drm_helper_hpd_irq_event(),
+which dereferences it in its first statement:
+
+	if (!dev->mode_config.poll_enabled)
+
+bridge.dev is assigned only by drm_bridge_attach(), but inno_hdmi_bind()
+unmutes the hotplug interrupt in inno_hdmi_init_hw() and installs the
+handler well before it attaches the bridge:
+
+	inno_hdmi_init_hw(hdmi);		/* unmutes hotplug */
+	devm_request_threaded_irq(...);		/* handler goes live */
+	...
+	hdmi->bridge.ddc = inno_hdmi_i2c_adapter(hdmi);
+	devm_drm_bridge_add(dev, &hdmi->bridge);
+	drm_bridge_attach(...);			/* bridge.dev set here */
+
+The bridge is allocated by devm_drm_bridge_alloc(), which kzalloc()s it,
+so bridge.dev is NULL for all of that window, and a hotplug event
+arriving in it enters drm_helper_hpd_irq_event(NULL).
+
+Before the conversion to a bridge the ordering was safe:
+inno_hdmi_register() called drmm_connector_hdmi_init(), which set
+connector.dev, before the interrupt was requested.
+
+Drop hotplug events that arrive before the bridge is attached.
+
+Fixes: 969325a2597e ("drm/rockchip: inno-hdmi: Convert to drm bridge")
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Michal Wilczynski <m.wilczynski@samsung.com>
+---
+ drivers/gpu/drm/bridge/inno-hdmi.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/inno-hdmi.c b/drivers/gpu/drm/bridge/inno-hdmi.c
+index cfb74cca9..5bfe59f18 100644
+--- a/drivers/gpu/drm/bridge/inno-hdmi.c
++++ b/drivers/gpu/drm/bridge/inno-hdmi.c
+@@ -929,7 +929,9 @@ static irqreturn_t inno_hdmi_irq(int irq, void *dev_id)
+ {
+ 	struct inno_hdmi *hdmi = dev_id;
+ 
+-	drm_helper_hpd_irq_event(hdmi->bridge.dev);
++	/* bridge.dev is NULL until drm_bridge_attach() */
++	if (hdmi->bridge.dev)
++		drm_helper_hpd_irq_event(hdmi->bridge.dev);
+ 
+ 	return IRQ_HANDLED;
+ }
