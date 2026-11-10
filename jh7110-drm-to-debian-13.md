@@ -34,7 +34,7 @@
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
-| Half-Life 2 | ⏳ | |
+| Half-Life 2 | 🔧 | DXVK build: needs Vulkan 1.3 ❌; ToGL build starts on Zink/PowerVR, hangs at "Loading..." (ZINK vkEndCommandBuffer VK_ERROR_INITIALIZATION_FAILED) |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -318,6 +318,18 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-10 23:05**: HL2. `~/games/hl2-source` on the board is the **DXVK** build (DXVK 3.1.1):
+  "Skipping: Device does not support Vulkan 1.3" → `DxvkError` ❌ (PowerVR is Vulkan 1.2). Deployed the
+  **ToGL** build (`~/code/source-engine/install-riscv64`, sha256 checked) to `~/games/hl2-source-togl`
+  (game data symlinked to `~/games/hl2-source/hl2`, own cfg/save). Start (systemd user unit, see
+  source-engine notes) with `. /opt/mesa-jh7110/env.sh; SDL_VIDEODRIVER=wayland`. Log: "OpenGL: zink
+  Vulkan 1.2(PowerVR B-Series BXE-4-32 MC1) 3.2 (Compatibility Profile) Mesa 26.3.0"; window "HALF-LIFE 2
+  - OpenGL" shows the loading screen, then `MESA: error: ZINK: vkEndCommandBuffer failed
+  (VK_ERROR_INITIALIZATION_FAILED)` right after loading engine.so and it hangs at "Loading..."
+  (`shots/hl2-togl-loading-zink.png`). No kernel messages. Probably a pipeline/shader the PowerVR driver
+  can't build (errors in draw-time pipeline creation are recorded silently in the cmd buffer).
+  Also: the UGREEN capture returns a **stale first frame** → screenshot.sh now keeps the 15th frame.
+  Note: the board also runs k0s/etcd (not ours; uses ~30% CPU).
 - **2026-11-10 22:53**: ✅ **KDE Plasma composited on the PowerVR GPU** (Zink via kmsro). Steps that
   failed first: `KWIN_DRM_DEVICES=card1:card0` (card numbers swap per boot; kwin ignores the
   non-KMS powervr card), kwin cap_sys_nice → LD_LIBRARY_PATH ignored, `MESA_LOADER_DRIVER_OVERRIDE=zink`

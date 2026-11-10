@@ -17,7 +17,9 @@ if [ -z "$DEV" ]; then
 	done
 fi
 [ -n "$DEV" ] || { echo "no UGREEN HDMI capture device found" >&2; exit 1; }
-if [ "$N" -gt 1 ]; then OUT=${OUT%.png}-%03d.png; else UPDATE=(-update 1); fi
+# The first frames after opening the device are stale (seen: a frame minutes old), so for a
+# single screenshot grab 15 frames and keep only the last one (-update 1).
+if [ "$N" -gt 1 ]; then OUT=${OUT%.png}-%03d.png; FR=$N; else UPDATE=(-update 1); FR=15; fi
 timeout -s KILL 30 ffmpeg -hide_banner -loglevel error -y -f v4l2 -i "$DEV" \
-	-frames:v "$N" "${UPDATE[@]}" "$OUT"
+	-frames:v "$FR" "${UPDATE[@]}" "$OUT"
 ls ${OUT//%03d/*}
