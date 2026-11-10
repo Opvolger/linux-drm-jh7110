@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Sun, 26 Apr 2026 00:03:25 +0000
-Subject: [PATCH 33/38] drm/imagination: skip FW cleanup for contexts/free
+Subject: [PATCH 33/39] drm/imagination: skip FW cleanup for contexts/free
  lists that were never kicked
 
 (cherry picked from commit 53310dc27965c192e78b9310c8cffe35f89578b1)

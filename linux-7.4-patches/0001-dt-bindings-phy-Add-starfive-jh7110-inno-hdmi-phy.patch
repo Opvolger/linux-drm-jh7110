@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:52:59 +0100
-Subject: [PATCH 01/38] dt-bindings: phy: Add starfive,jh7110-inno-hdmi-phy
+Subject: [PATCH 01/39] dt-bindings: phy: Add starfive,jh7110-inno-hdmi-phy
 
 Add the dt-binding for the StarFive JH7110 Innosilicon HDMI PHY.
 

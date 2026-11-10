@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Thu, 30 Apr 2026 18:06:06 -0400
-Subject: [PATCH 36/38] drm/imagination: don't flush the MMU on unmap after the
+Subject: [PATCH 36/39] drm/imagination: don't flush the MMU on unmap after the
  device is lost
 
 (cherry picked from commit e63d7bb2e26ac35308a89c1c15227192e567ae40)

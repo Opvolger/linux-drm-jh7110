@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:53 +0100
-Subject: [PATCH 24/38] MAINTAINERS: Add StarFive JH7110 display subsystem
+Subject: [PATCH 24/39] MAINTAINERS: Add StarFive JH7110 display subsystem
  entry
 
 The JH7110 display subsystem spans a PHY driver, a DRM bridge driver,

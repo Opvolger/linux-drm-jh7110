@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:46 +0100
-Subject: [PATCH 17/38] drm/bridge: inno-hdmi: Make the PHY configuration table
+Subject: [PATCH 17/39] drm/bridge: inno-hdmi: Make the PHY configuration table
  optional
 
 The pre-emphasis and drive-strength values in inno_hdmi_phy_config, and

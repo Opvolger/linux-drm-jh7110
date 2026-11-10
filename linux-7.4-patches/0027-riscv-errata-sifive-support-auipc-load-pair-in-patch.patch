@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bo Gan <ganboing@gmail.com>
 Date: Sun, 15 Mar 2026 23:03:27 -0700
-Subject: [PATCH 27/38] riscv: errata: sifive: support auipc/load pair in
+Subject: [PATCH 27/39] riscv: errata: sifive: support auipc/load pair in
  patched alternatives
 
 Enhance the errata/sifive patching function to support auipc/load

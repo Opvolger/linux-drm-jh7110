@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Sun, 3 May 2026 10:54:18 -0400
-Subject: [PATCH 30/38] drm/imagination: skip the gpu supported test
+Subject: [PATCH 30/39] drm/imagination: skip the gpu supported test
 
 (cherry picked from commit 25b3a27d855915ea846da07b47c05b8d17a2ada1)
 ---

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Tue, 18 Aug 2026 02:43:00 +0000
-Subject: [PATCH 37/38] drm/imagination: fix the per-submit heap-guard leak
+Subject: [PATCH 37/39] drm/imagination: fix the per-submit heap-guard leak
 
 (cherry picked from commit df27f00bff6a5b99b6d9579f6c9e0a8252ffe0c3)
 ---

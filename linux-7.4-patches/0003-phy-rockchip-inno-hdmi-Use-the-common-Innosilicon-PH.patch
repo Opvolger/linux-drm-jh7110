@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:53:01 +0100
-Subject: [PATCH 03/38] phy: rockchip: inno-hdmi: Use the common Innosilicon
+Subject: [PATCH 03/39] phy: rockchip: inno-hdmi: Use the common Innosilicon
  PHY helpers
 
 The RK3328 pre-PLL programming, its table lookup and its recalc_rate and

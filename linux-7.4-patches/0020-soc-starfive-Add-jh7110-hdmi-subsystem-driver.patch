@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:49 +0100
-Subject: [PATCH 20/38] soc: starfive: Add jh7110-hdmi-subsystem driver
+Subject: [PATCH 20/39] soc: starfive: Add jh7110-hdmi-subsystem driver
 
 Add the parent driver for the monolithic JH7110 HDMI IP block.
 

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:42 +0100
-Subject: [PATCH 13/38] drm/bridge: inno-hdmi: Split probe out of bind
+Subject: [PATCH 13/39] drm/bridge: inno-hdmi: Split probe out of bind
 
 inno_hdmi_bind() both sets up the bridge and attaches it to a DRM
 encoder. A platform whose HDMI controller is a child of a larger device

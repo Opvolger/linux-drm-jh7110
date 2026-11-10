@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Sat, 25 Apr 2026 18:38:42 -0400
-Subject: [PATCH 29/38] riscv: dts: starfive: add PowerVR BXE-4-32 GPU node to
+Subject: [PATCH 29/39] riscv: dts: starfive: add PowerVR BXE-4-32 GPU node to
  jh7110.dtsi
 
 (cherry picked from commit f4426d014faa86e220e919c154a99df0500c5f19)

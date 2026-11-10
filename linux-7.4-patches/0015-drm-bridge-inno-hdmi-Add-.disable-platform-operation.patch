@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:44 +0100
-Subject: [PATCH 15/38] drm/bridge: inno-hdmi: Add .disable platform operation
+Subject: [PATCH 15/39] drm/bridge: inno-hdmi: Add .disable platform operation
 
 The Innosilicon HDMI driver supports platform-specific behavior through
 the `inno_hdmi_plat_ops`. While it provides an `.enable` hook for

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bo Gan <ganboing@gmail.com>
 Date: Sun, 15 Mar 2026 23:03:26 -0700
-Subject: [PATCH 26/38] riscv: alternatives: support auipc+load pair
+Subject: [PATCH 26/39] riscv: alternatives: support auipc+load pair
 
 Previously only auipc+jalr pair is supported. Add auipc+load pair
 to support PC-relative memory load instruction as well.

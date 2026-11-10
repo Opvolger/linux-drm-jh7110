@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:53:03 +0100
-Subject: [PATCH 05/38] MAINTAINERS: Add StarFive JH7110 HDMI PHY entry
+Subject: [PATCH 05/39] MAINTAINERS: Add StarFive JH7110 HDMI PHY entry
 
 Add an entry for the StarFive JH7110 HDMI PHY binding and driver, next
 to the other JH7110 PHY drivers.

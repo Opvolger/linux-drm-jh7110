@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Sun, 16 Aug 2026 20:59:22 +0000
-Subject: [PATCH 38/38] drm/imagination: don't wedge the FW when tearing down a
+Subject: [PATCH 38/39] drm/imagination: don't wedge the FW when tearing down a
  busy context
 
 (cherry picked from commit 77f50b34b3e3308abf520e993e12d65be7b07c5c)

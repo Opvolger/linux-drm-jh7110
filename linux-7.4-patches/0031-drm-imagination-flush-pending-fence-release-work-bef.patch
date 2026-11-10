@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dominique Belhachemi <db@domibel.de>
 Date: Fri, 1 May 2026 15:52:57 -0400
-Subject: [PATCH 31/38] drm/imagination: flush pending fence release work
+Subject: [PATCH 31/39] drm/imagination: flush pending fence release work
  before module teardown
 
 (cherry picked from commit 0aa7103506bee45d96f6c898ef99c1ff8e53116e)

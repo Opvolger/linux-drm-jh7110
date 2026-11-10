@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michal Wilczynski <m.wilczynski@samsung.com>
 Date: Fri, 6 Nov 2026 14:58:41 +0100
-Subject: [PATCH 12/38] dt-bindings: display: starfive: Add
+Subject: [PATCH 12/39] dt-bindings: display: starfive: Add
  starfive,jh7110-vout-subsystem
 
 The JH7110 groups its display hardware into a video output subsystem,
