@@ -287,12 +287,33 @@ How the rendering is wired (important for later sessions):
 
 ## Rollback to stock Debian 13
 
-*(to be written and tested in step 8)*. Expected outline:
+Debian's own Mesa packages (trixie-backports 25.2.6) were **never replaced**: our Mesa lives in
+`/opt/mesa-jh7110` and is only used where `/opt/mesa-jh7110/env.sh` is sourced. So the rollback is:
+the stock kernel back in `/boot.scr`, our three packages purged, and our config files removed.
 
-1. Boot the Debian kernel; `apt purge` our kernel packages; `update-grub`.
-2. Mesa: `apt install --allow-downgrades` the Debian versions (or the backports version) of
-   the Mesa packages we replaced; remove any apt pinning we added.
-3. Remove our extra firmware/DTB files.
+**Script:** `board-tools/rollback.sh` (dry run; `board-tools/rollback.sh --yes` executes it), then
+`ssh opvolger@192.168.2.33 sudo systemctl reboot` and check `uname -r` = `6.12.74+deb13+1-riscv64`.
+
+Everything the project changed on the board, and how to undo it by hand:
+
+| Change | Undo |
+| --- | --- |
+| `/boot.scr` boots `7.4.0-rc1-jh7110` (written by `board-tools/set-boot.sh`) | `sudo cp /boot.scr.bak-6.12.74+deb13+1-riscv64 /boot.scr` (the original boot.scr), or `board-tools/set-boot.sh 6.12.74+deb13+1-riscv64` |
+| `/boot.cmd` overwritten (originally it pointed to 7.1.7, it was not what `boot.scr` contained) | the original text is in `board-tools/rollback.sh` |
+| package `linux-image-7.4.0-rc1-jh7110` | `sudo apt-get purge linux-image-7.4.0-rc1-jh7110` |
+| package `powervr-firmware-jh7110` (+ initramfs hook; initramfs of all kernels rebuilt) | `sudo apt-get purge powervr-firmware-jh7110` (postrm rebuilds the initramfs again) |
+| package `mesa-jh7110` (`/opt/mesa-jh7110`, `/usr/local/bin/mesa-jh7110-run`) | `sudo apt-get purge mesa-jh7110` |
+| `/etc/sddm.conf.d/50-jh7110.conf` (software greeter + autologin Plasma Wayland) | `sudo rm /etc/sddm.conf.d/50-jh7110.conf` |
+| `/etc/sysctl.d/50-jh7110-printk.conf` (`kernel.printk = 4 4 1 7`) | `sudo rm /etc/sysctl.d/50-jh7110-printk.conf` |
+| `~/.config/plasma-workspace/env/jh7110-kwin.sh`, `jh7110-mesa.sh` | `rm` them |
+| `~/.config/autostart/jh7110-fastfetch.desktop` | `rm` it |
+| `kwin_wayland` file capability `cap_sys_nice` removed | `sudo dpkg-reconfigure kwin-wayland` |
+| test tools installed: `libdrm-tests drm-info kmscube fastfetch mesa-utils vulkan-tools libcap2-bin` | optional: `sudo apt-get purge ...` |
+| `~/games/hl2-source-togl/` (ToGL build, data symlinked to `~/games/hl2-source`), `~/hl2-*.log`, `~/hl2-gdb.cmd` | optional: `rm -r` |
+
+Untouched: Debian kernels (6.12.x, 6.17, 7.0, 7.1 are still installed), Debian Mesa, U-Boot, GRUB/EFI.
+
+Rollback **tested**: not yet (see Plan step 8).
 
 ## Open questions
 
