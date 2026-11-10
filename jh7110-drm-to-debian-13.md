@@ -131,6 +131,30 @@ compatible in `drm/imagination`. The kernel docs list BXE-4-32 as unsupported, a
 `imagination` Vulkan driver does not support it either (as of 2026-11; to be verified). This
 display series gives **KMS/HDMI only, no 3D acceleration**.
 
+### GPU (phase B): leads found on 2026-11-10 (research by a subagent, still to verify)
+
+- **domibel (Dominique Belhachemi)** got the BXE-4-32 running on mainline drm/imagination:
+  guide https://github.com/domibel/visionfive2_gpu_bringup ; kernel https://github.com/domibel/linux
+  - branch `powervr_on_jh7110_visionfive2_v7.3-rc5` (11 commits on v7.3-rc5): GPU node in
+    jh7110.dtsi (`starfive,jh7110-gpu`, `img,img-bxe-4-32`, `dma-noncoherent`), extra
+    clocks/reset, `pvr_check_gpu_supported()` hack, Icenowy's "power up rascal+dust via
+    RGX_CR_POWER_EVENT" and fixes for firmware teardown and the VM.
+  - branch `jh7110_dc8200_hdmi_v7.3-rc5`: display series + **Bo Gan's XPbmtUC** RISC-V errata
+    series (uncached mappings via emulated Svpbmt, needed on the non-coherent JH7110), lore
+    `20260316060328.1173634-1-ganboing@gmail.com`, plus Samuel Holland's ALTERNATIVE_3.
+  - "sifive_ccache: Add StarFive JH7110 SoC support" (domibel): reportedly already in mainline.
+  - Config hints: `DRM_POWERVR=m`, `STARFIVE_STARLINK_CACHE=y`, `RISCV_NONSTANDARD_CACHE_OPS=y`,
+    the SiFive errata options, `cma=128M` or more.
+- Firmware `powervr/rogue_36.50.54.182_v1.fw` is not in linux-firmware; get it from
+  https://gitlab.freedesktop.org/imagination/linux-firmware/-/raw/powervr/powervr/rogue_36.50.54.182_v1.fw
+- Mesa **26.3** (pvr Vulkan + Zink): Vulkan 1.2, Zink OpenGL 3.2 core / GLES 3.1. Environment:
+  `PVR_I_WANT_A_BROKEN_VULKAN_DRIVER=1 MESA_VK_DEVICE_SELECT=1010:36054182`. Debian 13 /
+  backports (25.2) is too old, so we need to build Mesa ourselves.
+- Vendor fallback (phase C): starfive-tech/linux `JH7110_VisionFive2_6.6.y_devel` / `6.12.y_devel`;
+  blobs in github.com/starfive-tech/soft_3rdpart `IMG_GPU/out/img-gpu-powervr-bin-1.19.*.tar.gz`
+  (GLES/Vulkan, probably **no desktop GL**, so HL2 would be hard).
+- Other operating systems (FreeBSD, Haiku, ...): nothing found for this GPU.
+
 ### Mesa
 
 First try Debian 13 backports (already installed: 25.2.6). Only build Mesa ourselves if
