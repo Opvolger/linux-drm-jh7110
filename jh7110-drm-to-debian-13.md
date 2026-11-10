@@ -148,8 +148,16 @@ touching the eMMC.
 
 Verified 2026-11-10: power state ✅, HDMI capture ✅ (`/dev/video2`, UGREEN), reboot + U-Boot
 interrupt ✅ (U-Boot 2025.07-rc3, `bootcmd=bootflow scan`), `dhcp` in U-Boot ✅, `boot` back to
-Linux ✅. **TFTP ❌: the Fedora firewall blocks UDP 69** (zone `FedoraWorkstation`; the user must
-run `sudo firewall-cmd --add-service=tftp` once, `--permanent` too). Build machine IP: `192.168.2.34`.
+Linux ✅. TFTP ✅ after the user ran `sudo firewall-cmd --add-service=tftp` (runtime only: after a
+reboot of the build machine port 69 is blocked again unless `--permanent` is added). Build machine
+IP: `192.168.2.34`. In U-Boot: `dhcp` sets `serverip` to the router (.254), so run
+`setenv serverip 192.168.2.34` **after** `dhcp`; send U-Boot commands one per `ser.py` call
+(they get garbled when sent while `dhcp` is still running). Example load: `tftpboot 0x44000000 <file>`.
+
+**Power cycle:** a powerstation sits behind the plug and buffers power. After `poweroff`, **5 s off
+is not enough** (the board stays dead). **60 s off works.** Do: `ssh ... sudo poweroff`, wait about
+20 s, `power.sh off`, wait 60 s, `power.sh on`. Don't `pkill -f` with a pattern that matches your
+own shell command.
 
 ### Watching the HDMI output (UGREEN capture)
 
