@@ -1,0 +1,63 @@
+Subject: [PATCH] pvr: free shared dynamic render info only once
+
+Generated-by: LLM
+---
+--- a/src/imagination/vulkan/pvr_arch_cmd_buffer.c
++++ b/src/imagination/vulkan/pvr_arch_cmd_buffer.c
+@@ -70,6 +70,7 @@
+ #include "util/bitset.h"
+ #include "util/compiler.h"
+ #include "util/list.h"
++#include "util/set.h"
+ #include "util/macros.h"
+ #include "util/u_dynarray.h"
+ #include "util/u_math.h"
+@@ -148,10 +149,12 @@
+          pvr_bo_suballoc_free(sub_cmd->gfx.depth_bias_bo);
+          pvr_bo_suballoc_free(sub_cmd->gfx.scissor_bo);
+          if (sub_cmd->is_dynamic_render && !secondary_cont) {
+-            pvr_rstate_entry_remove(cmd_buffer->device, sub_cmd->gfx.rstate);
+-            pvr_dynamic_render_info_destroy(cmd_buffer->device,
+-                                            cmd_buffer,
+-                                            sub_cmd->gfx.dr_info);
++            if (sub_cmd->gfx.rstate)
++               pvr_rstate_entry_remove(cmd_buffer->device, sub_cmd->gfx.rstate);
++            if (sub_cmd->gfx.dr_info)
++               pvr_dynamic_render_info_destroy(cmd_buffer->device,
++                                               cmd_buffer,
++                                               sub_cmd->gfx.dr_info);
+          }
+          break;
+ 
+@@ -186,6 +189,31 @@
+ 
+ static void pvr_cmd_buffer_free_sub_cmds(struct pvr_cmd_buffer *cmd_buffer)
+ {
++   struct set *seen = _mesa_pointer_set_create(NULL);
++
++   list_for_each_entry_rev (struct pvr_sub_cmd, sub_cmd, &cmd_buffer->sub_cmds,
++                            link) {
++      if (!sub_cmd->owned || sub_cmd->type != PVR_SUB_CMD_TYPE_GRAPHICS ||
++          !sub_cmd->is_dynamic_render)
++         continue;
++
++      if (sub_cmd->gfx.dr_info) {
++         if (_mesa_set_search(seen, sub_cmd->gfx.dr_info))
++            sub_cmd->gfx.dr_info = NULL;
++         else
++            _mesa_set_add(seen, sub_cmd->gfx.dr_info);
++      }
++
++      if (sub_cmd->gfx.rstate) {
++         if (_mesa_set_search(seen, sub_cmd->gfx.rstate))
++            sub_cmd->gfx.rstate = NULL;
++         else
++            _mesa_set_add(seen, sub_cmd->gfx.rstate);
++      }
++   }
++
++   _mesa_set_destroy(seen, NULL);
++
+    list_for_each_entry_safe (struct pvr_sub_cmd,
+                              sub_cmd,
+                              &cmd_buffer->sub_cmds,

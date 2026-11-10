@@ -34,7 +34,7 @@
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
-| Half-Life 2 | ✅/🔧 | ToGL build in-game on Zink/PowerVR (`d1_canals_01`, HUD + world) with Mesa patch 0002; picture partly black, to check |
+| Half-Life 2 | ✅/🔧 | ToGL build plays on Zink/PowerVR (world, viewmodel, HUD correct: `shots/phase-b-hl2-timedemo.png`); very slow; stability being tested (Mesa patch 0003) |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -318,6 +318,16 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-11 00:30**: Timedemo `bench` (5449 frames, 1280x720) with Mesa rev 4: renders correctly
+  (the black first picture was just a dark spot), but very slow (main thread ~92% CPU; 4x U74) and
+  after ~15 min **SIGSEGV** in `pvr_rogue_mrt_load_op_state_cleanup` ← `pvr_dynamic_render_info_destroy`
+  ← `pvr_cmd_buffer_reset` (Zink submit thread). Cause: when a dynamic render is split into several
+  gfx sub-commands, they all copy the same `dr_info`/`rstate` pointers and each frees them → double
+  free. Fix `mesa/patches-26.3.0/0003-pvr-free-shared-dr-info-once.patch` (before freeing, walk the
+  sub-command list backwards and NULL out pointers already owned by a later sub-command). Mesa rev 5.
+  Also: the audio DMA (dw_axi_dmac) prints "apb_regs not initialized" for every transfer → the serial
+  console thread `pr/ttyS0` used 30-40% CPU. Fix: `/etc/sysctl.d/50-jh7110-printk.conf`
+  (`kernel.printk = 4 4 1 7`; remove to undo). Better later: a kernel patch (dev_warn_once).
 - **2026-11-10 23:48**: ✅ **HL2 in-game on the GPU** (`shots/phase-b-hl2-ingame-first.png`). Root cause
   of the hang: `strace -f -Z -e trace=ioctl` → `DRM_IOCTL_PVR_CREATE_HWRT_DATASET = -1 ENOSPC`. The
   kernel's `pvr_fw_object_create()` runs out of the **16 MB MIPS firmware heap**
