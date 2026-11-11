@@ -1,0 +1,17 @@
+# Cross-build environment for perf (tools/perf of the kernel tree) for the VisionFive 2 (JH7110)
+# (riscv64, Debian 13 trixie: same release as the board, so library sonames match).
+#
+#   podman build -t jh7110-perf-build -f scripts/perf/Containerfile scripts/perf
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN dpkg --add-architecture riscv64 \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+    crossbuild-essential-riscv64 gcc libc6-dev make flex bison pkg-config python3 git ca-certificates \
+    libelf-dev:riscv64 libdw-dev:riscv64 libslang2-dev:riscv64 zlib1g-dev:riscv64 \
+    libzstd-dev:riscv64 libcap-dev:riscv64 liblzma-dev:riscv64 \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV PKG_CONFIG_LIBDIR=/usr/lib/riscv64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+WORKDIR /src

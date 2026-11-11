@@ -285,6 +285,51 @@ How the rendering is wired (important for later sessions):
   plus `jh7110-kwin.sh` (`KWIN_DRM_NO_AMS=1`, still needed).
 - Firmware deb rev 2 has an initramfs hook (powervr probes from the initramfs at ~8 s).
 
+## Performance log (HL2 ToGL build, `d1_canals_01` start, Mesa GALLIUM_HUD fps)
+
+Measured with `board-tools/hl2-fps.sh` (kwin session) or the same game run with
+`SDL_VIDEODRIVER=kmsdrm` and SDDM stopped ("KMS", no compositor). Approximate values.
+
+| Setup | fps | Notes |
+| --- | --- | --- |
+| kwin, 1280x720, Mesa rev 5 | ~2.0 | "slideshow" |
+| kwin, 640x480, Mesa rev 5 | ~2.5 | resolution hardly matters → not fill-rate bound |
+| KMS (no kwin), 1280x720, Mesa rev 5 | 3.8 | kwin itself costs a lot of GPU (see below) |
+| KMS, 1280x720, `+mat_queue_mode 0` | 3.8 | material system threading is not the issue |
+| KMS, 1280x720, Mesa rev 7 (SCALED vertex formats) | **4.5** | u_vbuf CPU vertex conversion gone |
+
+Other measurements (Mesa rev 6/7):
+
+| Test | Result |
+| --- | --- |
+| glmark2 windowed in kwin (800x600) | 3–6 fps per scene |
+| glmark2 `--off-screen` 1920x1080, display **on** (kwin compositing) | clear 19, build 13 fps |
+| glmark2 `--off-screen` 1920x1080, display **off** (kwin idle) | clear 193–216, build 78–91 fps |
+| es2gears in kwin (Zink client) / (llvmpipe client) | ~2 / ~1.5 fps → kwin's repaint rate is the limit |
+| es2gears in kwin after unloading blur + contrast effects | 3.4–4.4 fps |
+| vkcube (Vulkan WSI) in kwin, FIFO / immediate | 2.85 / 35 fps |
+| kmscube on KMS (GBM → kmsro → Zink → dumb buffer) | ~93 fps → the KMS/scanout path itself is fine |
+
+Findings, in order of discovery:
+
+1. **kwin compositing is very expensive on this GPU** (~150 ms GPU per kwin frame, even for a tiny
+   client); blur/contrast effects roughly double it. With the display off (DPMS) everything else is
+   ~10x faster. Not fixed yet; kwin's GL path needs investigating (or another compositor, or HL2 on KMS).
+2. **u_vbuf**: HL2 uses `UBYTE4`/`SHORT2/4` vertex data = `*SCALED` vertex formats, which the PowerVR
+   driver didn't expose → Mesa converted vertex buffers on the CPU for every draw (GPU sync + uncached
+   reads). Fixed with `mesa/patches-26.3.0/0005-pvr-scaled-vertex-formats.patch` (rev 7): +18%.
+3. Per HL2 frame on KMS (rev 7): ~4 submits, ~26 new GPU BOs (control streams, `pvr_bo_alloc` per 4 KB
+   CSB block + VM map/unmap), ~125 ms GPU time, ~75 ms CPU time, *not overlapping* (ToGL's
+   `CPersistentBuffer::BlockUntilNotBusy` → `glClientWaitSync`, and pvr waits on the CPU for the
+   previous job before every submit: `pvr_clear_last_submits_syncs`). System is ~93% idle.
+4. Not the cause (tested): GPU runtime PM (`power/control=on`), CPU governor (schedutil vs performance),
+   SPM scratch buffer reuse (patch 0004 kept, no measurable effect), material system threading.
+5. SDL `kmsdrm`: every page flip fails with `ENOSPC` (frames are rendered but not shown) → KMS runs are
+   only usable as measurements for now.
+
+Kept (fastest so far): `keep/` holds kernel `-2`, firmware `-2`, Mesa rev 5 (stable); Mesa rev 7 is in
+`debs/` (faster, being tested).
+
 ## Rollback to stock Debian 13
 
 Debian's own Mesa packages (trixie-backports 25.2.6) were **never replaced**: our Mesa lives in
@@ -339,6 +384,10 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-11 01:45**: performance investigation, see *Performance log*. The user asked to keep an
+  fps list, stop very slow runs after a few minutes, and keep the debs of the fastest 7.4 kernel +
+  Mesa. perf for 7.4 built: `scripts/perf/build-perf.sh` → `debs/linux-perf-jh7110_7.4.0-rc1-1_riscv64.deb`
+  (installed). Mesa patches 0004 (SPM scratch reuse) and 0005 (SCALED vertex formats) added.
 - **2026-11-11 00:30**: Timedemo `bench` (5449 frames, 1280x720) with Mesa rev 4: renders correctly
   (the black first picture was just a dark spot), but very slow (main thread ~92% CPU; 4x U74) and
   after ~15 min **SIGSEGV** in `pvr_rogue_mrt_load_op_state_cleanup` ← `pvr_dynamic_render_info_destroy`
