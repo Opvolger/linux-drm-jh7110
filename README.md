@@ -394,6 +394,12 @@ records the UGREEN capture card's audio input (only that device; its ALSA captur
 Results: 1000 Hz @ 48 kHz and 440 Hz @ 32 kHz PASS on both channels (rms ~11500), left-only tone
 → left 16708 / right 1.7. The user also heard it on the monitor speakers.
 
+Video: HL2 `+timedemoquit bench` (fullscreen 1280x720, ToGL/Zink, Mesa ayie-2, game sound on
+HDMI) recorded through the capture card (MJPEG 1280x720@30 + audio → H.264/AAC):
+`logs/hl2-timedemo-open-stack-hdmi-audio.mkv` (8:46, 228 MB, not in git), still
+`shots/phase-e-hl2-timedemo-hdmi-audio.png`. Timedemo with sound: **5449 frames in 446.9 s = 12.19 fps**;
+audio level present over the whole run (rms per 30 s 590-3027 during play).
+
 Upstream: missing for a submission: `#sound-dai-cells` in the
 `starfive,jh7110-inno-hdmi-controller` binding, and `Signed-off-by` (to be added by the user).
 
