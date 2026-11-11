@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas.magre@topicus.nl>
-Date: Wed, 11 Nov 2026 00:11:22 +0100
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Wed, 11 Nov 2026 17:05:19 +0100
 Subject: [PATCH 39/39] dmaengine: dw-axi-dmac: don't log an error per transfer
  without apb_regs
 
@@ -15,7 +15,7 @@ Generated-by: LLM
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/dma/dw-axi-dmac/dw-axi-dmac-platform.c b/drivers/dma/dw-axi-dmac/dw-axi-dmac-platform.c
-index 7520c78f5..d8b6bc4e8 100644
+index 7520c78f55..d8b6bc4e8d 100644
 --- a/drivers/dma/dw-axi-dmac/dw-axi-dmac-platform.c
 +++ b/drivers/dma/dw-axi-dmac/dw-axi-dmac-platform.c
 @@ -576,7 +576,7 @@ static void dw_axi_dma_set_hw_channel(struct axi_dma_chan *chan, bool set)

@@ -19,6 +19,11 @@ if [ -n "$(git -C "$TREE" status --porcelain --untracked-files=no)" ]; then
 	exit 1
 fi
 
+git -C "$TREE" rev-parse -q --verify "$TAG^{commit}" >/dev/null || {
+	echo "tag $TAG not found in linux-$V (set TAG=..., e.g. TAG=v$V-rc1)" >&2
+	exit 1
+}
+
 mkdir -p "$PATCHES"
 rm -f "$PATCHES"/*.patch
 git -C "$TREE" format-patch --quiet --zero-commit --no-signature \
