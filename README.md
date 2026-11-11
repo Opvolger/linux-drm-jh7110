@@ -382,6 +382,10 @@ fork's dataset reuse list). Kernel unchanged (`7.4.0-rc1-jh7110`). Package
 | **KDE fullscreen, desktop 1280x720, ayie-2** | **25.9** (median) | | picture correct, `shots/ayie2-hl2-kwin-fs.png` |
 | `+timedemo bench`, KDE fullscreen, ayie-2 | **11.75 avg** | | 5449 frames in 463.9 s, 2 complete runs (rev 4/5 never finished) |
 
+Start: app menu "Half-Life 2 (PowerVR Zink, open stack)" → `~/games/hl2-source-togl/run-hl2.sh`
+(fullscreen 1280x720, refuses to run on another kernel than `*-jh7110`; log `~/hl2-run-togl.log`;
+menu entry `~/.local/share/applications/hl2-source-togl.desktop`).
+
 Notes:
 - With the fork, Zink reports OpenGL **2.1** instead of 3.2 compat: `9a2b374` predates upstream's
   `VK_EXT_transform_feedback` for pvr (in 26.3.0). ToGL only needs 2.1 + extensions. The fork has
