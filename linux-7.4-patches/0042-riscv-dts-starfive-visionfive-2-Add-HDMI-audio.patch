@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Thu, 12 Nov 2026 00:19:26 +0100
+Subject: [PATCH 42/42] riscv: dts: starfive: visionfive-2: Add HDMI audio
+
+Add a sound card that plays through I2S TX0 into the HDMI controller,
+enable I2S TX0 and mux GPIO 4 as the external 12.288 MHz MCLK input that
+the I2S driver selects as its master clock.
+
+Generated-by: LLM
+---
+ .../jh7110-starfive-visionfive-2.dtsi         | 43 +++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2.dtsi b/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2.dtsi
+index 35208f95cd..2591134e07 100644
+--- a/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2.dtsi
++++ b/arch/riscv/boot/dts/starfive/jh7110-starfive-visionfive-2.dtsi
+@@ -11,6 +11,38 @@ / {
+ 	aliases {
+ 		ethernet1 = &gmac1;
+ 	};
++
++	sound-hdmi {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "StarFive-HDMI-Sound-Card";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		simple-audio-card,dai-link@0 {
++			reg = <0>;
++			format = "i2s";
++			bitclock-master = <&hdmi_sndcpu>;
++			frame-master = <&hdmi_sndcpu>;
++
++			hdmi_sndcpu: cpu {
++				sound-dai = <&i2stx0>;
++			};
++
++			codec {
++				sound-dai = <&hdmi_controller>;
++			};
++		};
++	};
++};
++
++&hdmi_controller {
++	#sound-dai-cells = <0>;
++};
++
++&i2stx0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mclk_ext_pins>;
++	status = "okay";
+ };
+ 
+ &gmac0 {
+@@ -93,3 +125,14 @@ &usb0 {
+ 	dr_mode = "peripheral";
+ 	status = "okay";
+ };
++
++&sysgpio {
++	mclk_ext_pins: mclk-ext-0 {
++		mclk-ext-pins {
++			pinmux = <GPIOMUX(4, GPOUT_LOW,
++					     GPOEN_DISABLE,
++					     GPI_SYS_MCLK_EXT)>;
++			input-enable;
++		};
++	};
++};

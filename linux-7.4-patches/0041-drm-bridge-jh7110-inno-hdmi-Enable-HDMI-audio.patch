@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Thu, 12 Nov 2026 00:19:26 +0100
+Subject: [PATCH 41/42] drm/bridge: jh7110-inno-hdmi: Enable HDMI audio
+
+On the JH7110 the HDMI controller's I2S input is driven by the I2S TX0
+controller (its bit clock is the controller's "bclk"), so expose HDMI
+audio.
+
+Generated-by: LLM
+---
+ drivers/gpu/drm/bridge/jh7110-inno-hdmi.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/bridge/jh7110-inno-hdmi.c b/drivers/gpu/drm/bridge/jh7110-inno-hdmi.c
+index a0283f83dd..e7319e6ed0 100644
+--- a/drivers/gpu/drm/bridge/jh7110-inno-hdmi.c
++++ b/drivers/gpu/drm/bridge/jh7110-inno-hdmi.c
+@@ -273,6 +273,7 @@ static const struct inno_hdmi_plat_ops stf_inno_hdmi_plat_ops = {
+ static const struct inno_hdmi_plat_data stf_inno_hdmi_plat_data = {
+ 	.ops = &stf_inno_hdmi_plat_ops,
+ 	.reg_clk_source_tmds = true,
++	.audio = true,
+ 	.supported_hdmi_ver = HDMI_VERSION_1_4,
+ };
+ 

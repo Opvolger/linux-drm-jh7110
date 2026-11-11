@@ -38,6 +38,7 @@
 | Half-Life 2 (open stack) | ✅ slow | ToGL build on Zink/PowerVR, Mesa 26.3.0 rev 10: ~3.5 fps (desktop session), ~4.5–5 fps (KMS) |
 | **Half-Life 2 (open stack + PowerVR perf fork, phase D)** | ✅ **~26–28 fps** | Mesa main `9a2b374` + ayiejosh perf series + our patches (`mesa-jh7110 26.3.0~git9a2b374+ayie-2`, installed): ~28 fps KMS, ~26 fps KDE fullscreen 1280x720, timedemo 11.75 fps avg (`shots/ayie2-hl2-kwin-fs.png`) |
 | **Half-Life 2 (vendor stack, phase C)** | ✅ **18–53 fps** | togles build on Imagination's closed GLES 3.2 + vendor kernel 6.12.5-vf2: `shots/phase-c-hl2-togles-53fps.png` |
+| **HDMI audio (open stack, phase E)** | ✅ | kernel `7.4.0-rc1-3` (patches 0040-0042): ALSA card `StarFive-HDMI-Sound-Card`, PipeWire default sink; verified with the HDMI capture card (1 kHz/440 Hz, 48/32 kHz, L/R correct) |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -62,6 +63,7 @@ Makefile                  make checkout-7.4 / config-7.4 / deb-7.4 / export-7.4 
 linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series v7 (from lore),
                           0025-0028 XPbmtUC errata (Samuel Holland ALTERNATIVE_3 + Bo Gan),
                           0029-0038 PowerVR BXE-4-32 bring-up (domibel, rebased on 7.4-rc1)
+                          0039 dw-axi-dmac log level, 0040-0042 HDMI audio (ours, phase E)
 mesa/                     Dockerfile + build.sh: Mesa cross-build -> debs/mesa-jh7110_*.deb (/opt)
 mesa/patches-26.3.0/      our patches on the 26.3.0 release (rev 1-10)
 mesa/prepare-git9a2b374.sh  phase D tree mesa/mesa-git: Mesa main 9a2b374 + fork-ayiejosh-series/
@@ -363,6 +365,38 @@ Kept (fastest so far, as asked): **phase D: `keep/mesa-jh7110_26.3.0~git9a2b374+
 fastest open-stack Mesa (see *Phase D result*).** Before that: `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
 stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.sh)**.
 
+## Phase E result: HDMI audio on the open stack (2026-11-12 00:35) ✅
+
+The mainline Innosilicon HDMI bridge only did video; its audio registers were defined but unused,
+and the DT had no HDMI sound card. Our patches (kernel package `7.4.0-rc1-3`, copy in `keep/`):
+
+- `0040 drm/bridge: inno-hdmi: Add HDMI audio support`: DRM bridge HDMI audio callbacks
+  (`DRM_BRIDGE_OP_HDMI_AUDIO`, the bridge connector registers the generic `hdmi-codec`); sample
+  rate (reg 0x37), I2S lanes/mode (0x38), N/CTS from `drm_hdmi_acr_get_n_cts()` (0x3f-0x47, CTS
+  from software, 0x35 bit 7) on prepare and after every mode set, mute via AV mute (0x05 bit 1),
+  audio infoframe through the AAI packet buffer. Only for platforms with `plat_data->audio`.
+  Kconfig: `DRM_INNO_HDMI` selects `DRM_DISPLAY_HDMI_AUDIO_HELPER` and `SND_SOC_HDMI_CODEC`.
+  Register sequence taken from the vendor driver `drivers/gpu/drm/verisilicon/starfive_hdmi_audio.c`.
+- `0041 drm/bridge: jh7110-inno-hdmi: Enable HDMI audio` (`.audio = true`).
+- `0042 riscv: dts: starfive: visionfive-2: Add HDMI audio`: `simple-audio-card`
+  "StarFive-HDMI-Sound-Card" (`i2stx0` → `&hdmi_controller`, `#sound-dai-cells`), `i2stx0` enabled,
+  GPIO 4 muxed as `GPI_SYS_MCLK_EXT` (the 12.288 MHz MCLK that dwc-i2s selects).
+- `scripts/make-config.sh`: `SND_DESIGNWARE_I2S`, `SND_SIMPLE_CARD` as modules.
+
+Limits: mainline dwc-i2s offers I2S TX0 with 2 channels at 32/48 kHz only (44.1 kHz gets resampled
+by ALSA plug/PipeWire). PipeWire's default sink on the board is now
+`alsa_output.platform-sound-hdmi.stereo-fallback` (undo: `pactl set-default-sink
+alsa_output.platform-sound.stereo-fallback` = the 3.5 mm jack).
+
+Test: `board-tools/hdmi-audio-test.sh [freq] [rate]` plays a sine on the board's HDMI card and
+records the UGREEN capture card's audio input (only that device; its ALSA capture switch
+"Digital In" starts **off** and records silence until `amixer -c Capture sset 'Digital In' cap`).
+Results: 1000 Hz @ 48 kHz and 440 Hz @ 32 kHz PASS on both channels (rms ~11500), left-only tone
+→ left 16708 / right 1.7. The user also heard it on the monitor speakers.
+
+Upstream: missing for a submission: `#sound-dai-cells` in the
+`starfive,jh7110-inno-hdmi-controller` binding, and `Signed-off-by` (to be added by the user).
+
 ## Phase D result: open stack ~6x faster with the PowerVR perf fork (2026-11-11 22:40) ✅
 
 Mesa main `9a2b374` + patches 0001-0105 of the performance series of
@@ -628,3 +662,5 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   Logs: `logs/mesa-ayie-build-*.log`, board `~/hl2-*ayie*.log`, `/tmp/hl2-kms-ayie*.log`.
 - **2026-11-11 23:05**: ayie-3 (later fork patches 0300-0302 + 0384-0386) hangs the board 2/2 on the
   KMS run → back to ayie-2 (installed). See *Phase D result*.
+- **2026-11-12 00:35**: ✅ **Phase E: HDMI audio** (see *Phase E result*). Kernel `7.4.0-rc1-3`
+  (0039 dmac log level is in it too) installed; board root fs is at **97 %** (2 GB free).

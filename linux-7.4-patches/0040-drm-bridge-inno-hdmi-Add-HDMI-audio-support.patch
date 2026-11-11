@@ -1,0 +1,307 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Thu, 12 Nov 2026 00:19:26 +0100
+Subject: [PATCH 40/42] drm/bridge: inno-hdmi: Add HDMI audio support
+
+The Innosilicon HDMI transmitter has an I2S audio input with its own
+sample rate, I2S mode and audio clock regeneration (N/CTS) registers,
+which are already defined in this driver but never used.
+
+Implement the DRM bridge HDMI audio callbacks: program the sample rate,
+the number of I2S lanes and N/CTS (from drm_hdmi_acr_get_n_cts() for the
+current TMDS character rate) on prepare and again after every mode set,
+mute and unmute through the AV mute register, and send the audio
+infoframe through the AAI packet buffer. The drm_bridge_connector then
+registers the generic HDMI codec.
+
+Audio is only exposed when the platform data says the integration feeds
+the I2S input, so existing users are unchanged.
+
+Generated-by: LLM
+---
+ drivers/gpu/drm/bridge/Kconfig     |   2 +
+ drivers/gpu/drm/bridge/inno-hdmi.c | 191 +++++++++++++++++++++++++++++
+ include/drm/bridge/inno_hdmi.h     |   2 +
+ 3 files changed, 195 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
+index 9c2a37ac81..82f0046199 100644
+--- a/drivers/gpu/drm/bridge/Kconfig
++++ b/drivers/gpu/drm/bridge/Kconfig
+@@ -102,10 +102,12 @@ config DRM_I2C_NXP_TDA998X
+ config DRM_INNO_HDMI
+ 	tristate
+ 	select DRM_BRIDGE_CONNECTOR
++	select DRM_DISPLAY_HDMI_AUDIO_HELPER
+ 	select DRM_DISPLAY_HDMI_HELPER
+ 	select DRM_DISPLAY_HELPER
+ 	select DRM_KMS_HELPER
+ 	select REGMAP_MMIO
++	select SND_SOC_HDMI_CODEC if SND_SOC
+ 
+ config DRM_ITE_IT6263
+ 	tristate "ITE IT6263 LVDS/HDMI bridge"
+diff --git a/drivers/gpu/drm/bridge/inno-hdmi.c b/drivers/gpu/drm/bridge/inno-hdmi.c
+index ce036965a4..88755498ee 100644
+--- a/drivers/gpu/drm/bridge/inno-hdmi.c
++++ b/drivers/gpu/drm/bridge/inno-hdmi.c
+@@ -30,6 +30,8 @@
+ #include <drm/display/drm_hdmi_helper.h>
+ #include <drm/display/drm_hdmi_state_helper.h>
+ 
++#include <sound/hdmi-codec.h>
++
+ #define DDC_SEGMENT_ADDR		0x30
+ 
+ #define HDMI_SCL_RATE			(100 * 1000)
+@@ -402,6 +404,12 @@ struct inno_hdmi {
+ 	struct inno_hdmi_i2c *i2c;
+ 	struct i2c_adapter *ddc;
+ 	const struct inno_hdmi_plat_data *plat_data;
++
++	/* HDMI audio state, protected by audio_lock */
++	struct mutex audio_lock;
++	unsigned long long tmds_char_rate;
++	unsigned int audio_sample_rate;
++	unsigned int audio_channels;
+ };
+ 
+ enum {
+@@ -637,6 +645,163 @@ static int inno_hdmi_bridge_write_hdmi_infoframe(struct drm_bridge *bridge,
+ 	return 0;
+ }
+ 
++static int inno_hdmi_bridge_clear_audio_infoframe(struct drm_bridge *bridge)
++{
++	struct inno_hdmi *hdmi = bridge_to_inno_hdmi(bridge);
++
++	hdmi_writeb(hdmi, HDMI_CONTROL_PACKET_BUF_INDEX, INFOFRAME_AAI);
++
++	return 0;
++}
++
++static int inno_hdmi_bridge_write_audio_infoframe(struct drm_bridge *bridge,
++						  const u8 *buffer, size_t len)
++{
++	struct inno_hdmi *hdmi = bridge_to_inno_hdmi(bridge);
++	ssize_t i;
++
++	inno_hdmi_bridge_clear_audio_infoframe(bridge);
++
++	for (i = 0; i < len; i++)
++		hdmi_writeb(hdmi, HDMI_CONTROL_PACKET_ADDR + i, buffer[i]);
++
++	return 0;
++}
++
++/* Program the audio path; the caller holds audio_lock. */
++static void inno_hdmi_audio_config(struct inno_hdmi *hdmi)
++{
++	unsigned int n, cts;
++	u8 rate, lanes;
++
++	if (!hdmi->tmds_char_rate || !hdmi->audio_sample_rate)
++		return;
++
++	switch (hdmi->audio_sample_rate) {
++	case 32000:
++		rate = AUDIO_32K;
++		break;
++	case 44100:
++		rate = AUDIO_441K;
++		break;
++	case 48000:
++		rate = AUDIO_48K;
++		break;
++	case 88200:
++		rate = AUDIO_882K;
++		break;
++	case 96000:
++		rate = AUDIO_96K;
++		break;
++	case 176400:
++		rate = AUDIO_1764K;
++		break;
++	default:
++		rate = AUDIO_192K;
++		break;
++	}
++
++	if (hdmi->audio_channels <= 2)
++		lanes = I2S_CHANNEL_1_2;
++	else if (hdmi->audio_channels <= 4)
++		lanes = I2S_CHANNEL_3_4;
++	else if (hdmi->audio_channels <= 6)
++		lanes = I2S_CHANNEL_5_6;
++	else
++		lanes = I2S_CHANNEL_7_8;
++
++	drm_hdmi_acr_get_n_cts(hdmi->tmds_char_rate, hdmi->audio_sample_rate,
++			       &n, &cts);
++
++	/* I2S input, CTS from the registers below */
++	hdmi_modb(hdmi, HDMI_AUDIO_CTRL1,
++		  v_CTS_SOURCE(1) | v_AUDIO_SOURCE(3),
++		  v_CTS_SOURCE(CTS_SOURCE_EXTERNAL) |
++		  v_AUDIO_SOURCE(AUDIO_SOURCE_IIS));
++	hdmi_writeb(hdmi, AUDIO_SAMPLE_RATE, rate);
++	hdmi_writeb(hdmi, AUDIO_I2S_MODE,
++		    v_I2S_MODE(I2S_STANDARD) | v_I2S_CHANNEL(lanes));
++
++	hdmi_writeb(hdmi, AUDIO_N_H, (n >> 16) & 0x0f);
++	hdmi_writeb(hdmi, AUDIO_N_M, (n >> 8) & 0xff);
++	hdmi_writeb(hdmi, AUDIO_N_L, n & 0xff);
++
++	hdmi_writeb(hdmi, HDMI_AUDIO_CTS_H, (cts >> 16) & 0x0f);
++	hdmi_writeb(hdmi, HDMI_AUDIO_CTS_M, (cts >> 8) & 0xff);
++	hdmi_writeb(hdmi, HDMI_AUDIO_CTS_L, cts & 0xff);
++
++	dev_dbg(hdmi->dev, "audio: %u Hz, %u ch, TMDS %llu Hz, N=%u CTS=%u\n",
++		hdmi->audio_sample_rate, hdmi->audio_channels,
++		hdmi->tmds_char_rate, n, cts);
++}
++
++static int inno_hdmi_audio_prepare(struct drm_bridge *bridge,
++				   struct drm_connector *connector,
++				   struct hdmi_codec_daifmt *fmt,
++				   struct hdmi_codec_params *hparms)
++{
++	struct inno_hdmi *hdmi = bridge_to_inno_hdmi(bridge);
++
++	if (fmt->fmt != HDMI_I2S) {
++		dev_err(hdmi->dev, "unsupported audio format %d\n", fmt->fmt);
++		return -EINVAL;
++	}
++
++	switch (hparms->sample_rate) {
++	case 32000:
++	case 44100:
++	case 48000:
++	case 88200:
++	case 96000:
++	case 176400:
++	case 192000:
++		break;
++	default:
++		dev_err(hdmi->dev, "unsupported sample rate %d\n",
++			hparms->sample_rate);
++		return -EINVAL;
++	}
++
++	if (hparms->channels < 1 || hparms->channels > 8)
++		return -EINVAL;
++
++	mutex_lock(&hdmi->audio_lock);
++	hdmi->audio_sample_rate = hparms->sample_rate;
++	hdmi->audio_channels = hparms->channels;
++	inno_hdmi_audio_config(hdmi);
++	mutex_unlock(&hdmi->audio_lock);
++
++	return drm_atomic_helper_connector_hdmi_update_audio_infoframe(connector,
++								      &hparms->cea);
++}
++
++static void inno_hdmi_audio_shutdown(struct drm_bridge *bridge,
++				     struct drm_connector *connector)
++{
++	struct inno_hdmi *hdmi = bridge_to_inno_hdmi(bridge);
++
++	drm_atomic_helper_connector_hdmi_clear_audio_infoframe(connector);
++
++	mutex_lock(&hdmi->audio_lock);
++	hdmi->audio_sample_rate = 0;
++	hdmi->audio_channels = 0;
++	mutex_unlock(&hdmi->audio_lock);
++}
++
++static int inno_hdmi_audio_mute_stream(struct drm_bridge *bridge,
++				       struct drm_connector *connector,
++				       bool enable, int direction)
++{
++	struct inno_hdmi *hdmi = bridge_to_inno_hdmi(bridge);
++
++	if (direction != SNDRV_PCM_STREAM_PLAYBACK)
++		return -EINVAL;
++
++	hdmi_modb(hdmi, HDMI_AV_MUTE, m_AUDIO_MUTE, v_AUDIO_MUTE(enable));
++
++	return 0;
++}
++
+ static int inno_hdmi_config_video_csc(struct inno_hdmi *hdmi,
+ 				      struct drm_connector *connector,
+ 				      struct drm_display_mode *mode)
+@@ -812,6 +977,12 @@ static int inno_hdmi_setup(struct inno_hdmi *hdmi, struct drm_atomic_commit *sta
+ 	 */
+ 	inno_hdmi_i2c_init(hdmi, new_conn_state->hdmi.tmds_char_rate);
+ 
++	/* The audio clock regeneration values depend on the TMDS rate */
++	mutex_lock(&hdmi->audio_lock);
++	hdmi->tmds_char_rate = new_conn_state->hdmi.tmds_char_rate;
++	inno_hdmi_audio_config(hdmi);
++	mutex_unlock(&hdmi->audio_lock);
++
+ 	/* Unmute video and audio output */
+ 	hdmi_modb(hdmi, HDMI_AV_MUTE, m_AUDIO_MUTE | m_VIDEO_BLACK,
+ 		  v_AUDIO_MUTE(0) | v_VIDEO_MUTE(0));
+@@ -904,6 +1075,10 @@ static void inno_hdmi_bridge_atomic_disable(struct drm_bridge *bridge,
+ 	if (plat_ops && plat_ops->disable)
+ 		plat_ops->disable(hdmi->dev);
+ 
++	mutex_lock(&hdmi->audio_lock);
++	hdmi->tmds_char_rate = 0;
++	mutex_unlock(&hdmi->audio_lock);
++
+ 	inno_hdmi_standby(hdmi);
+ }
+ 
+@@ -919,6 +1094,11 @@ static const struct drm_bridge_funcs inno_hdmi_bridge_funcs = {
+ 	.hdmi_write_avi_infoframe = inno_hdmi_bridge_write_avi_infoframe,
+ 	.hdmi_clear_hdmi_infoframe = inno_hdmi_bridge_clear_hdmi_infoframe,
+ 	.hdmi_write_hdmi_infoframe = inno_hdmi_bridge_write_hdmi_infoframe,
++	.hdmi_clear_audio_infoframe = inno_hdmi_bridge_clear_audio_infoframe,
++	.hdmi_write_audio_infoframe = inno_hdmi_bridge_write_audio_infoframe,
++	.hdmi_audio_prepare = inno_hdmi_audio_prepare,
++	.hdmi_audio_shutdown = inno_hdmi_audio_shutdown,
++	.hdmi_audio_mute_stream = inno_hdmi_audio_mute_stream,
+ 	.mode_valid = inno_hdmi_bridge_mode_valid,
+ };
+ 
+@@ -1125,6 +1305,10 @@ struct inno_hdmi *inno_hdmi_probe(struct platform_device *pdev,
+ 	hdmi->dev = dev;
+ 	hdmi->plat_data = plat_data;
+ 
++	ret = devm_mutex_init(dev, &hdmi->audio_lock);
++	if (ret)
++		return ERR_PTR(ret);
++
+ 	/*
+ 	 * On platforms where the controller shares a register space with
+ 	 * other blocks, the parent owns the regmap. Otherwise map our own
+@@ -1180,6 +1364,13 @@ struct inno_hdmi *inno_hdmi_probe(struct platform_device *pdev,
+ 	hdmi->bridge.supported_hdmi_ver = plat_data->supported_hdmi_ver ?:
+ 					  HDMI_VERSION_1_2;
+ 
++	if (plat_data->audio) {
++		hdmi->bridge.ops |= DRM_BRIDGE_OP_HDMI_AUDIO;
++		hdmi->bridge.hdmi_audio_dev = dev;
++		hdmi->bridge.hdmi_audio_max_i2s_playback_channels = 8;
++		hdmi->bridge.hdmi_audio_dai_port = -1;
++	}
++
+ 	hdmi->bridge.ddc = inno_hdmi_i2c_adapter(hdmi);
+ 	if (IS_ERR(hdmi->bridge.ddc))
+ 		return ERR_CAST(hdmi->bridge.ddc);
+diff --git a/include/drm/bridge/inno_hdmi.h b/include/drm/bridge/inno_hdmi.h
+index 89a38f2609..bca00fae03 100644
+--- a/include/drm/bridge/inno_hdmi.h
++++ b/include/drm/bridge/inno_hdmi.h
+@@ -37,6 +37,8 @@ struct inno_hdmi_plat_data {
+ 	bool reg_clk_source_tmds;
+ 	/* HDMI version the integration supports; HDMI 1.2 if left unset. */
+ 	enum hdmi_version supported_hdmi_ver;
++	/* The integration feeds the controller's I2S audio input. */
++	bool audio;
+ };
+ 
+ struct inno_hdmi *inno_hdmi_bind(struct platform_device *pdev,
