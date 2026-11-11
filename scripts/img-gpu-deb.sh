@@ -31,6 +31,19 @@ done
 cp -a "$T"/lib/firmware/rgx.* "$P/lib/firmware/"
 sed 's#"library_path": *"[^"]*"#"library_path": "/opt/img-gpu/lib/libVK_IMG.so.1"#' \
 	"$T/etc/vulkan/icd.d/icdconf.json" > "$P/opt/img-gpu/icd.d/img_icd.json"
+# pvrsrvkm is built into the vendor kernel and probes before the root fs is mounted: put the
+# firmware into the initramfs.
+install -D -m755 /dev/stdin "$P/usr/share/initramfs-tools/hooks/img-gpu-jh7110" <<'HOOK'
+#!/bin/sh
+[ "$1" = prereqs ] && exit 0
+. /usr/share/initramfs-tools/hook-functions
+copy_file firmware /lib/firmware/rgx.fw.36.50.54.182
+copy_file firmware /lib/firmware/rgx.sh.36.50.54.182
+HOOK
+for s in postinst postrm; do
+	printf '#!/bin/sh\nset -e\nif command -v update-initramfs >/dev/null; then update-initramfs -u -k all; fi\n' > "$P/DEBIAN/$s"
+	chmod 755 "$P/DEBIAN/$s"
+done
 cat > "$P/DEBIAN/control" <<EOF
 Package: img-gpu-jh7110
 Version: $VER-$REV

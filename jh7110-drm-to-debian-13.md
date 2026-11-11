@@ -34,7 +34,8 @@
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
-| Half-Life 2 | ✅/🔧 | ToGL build plays on Zink/PowerVR (world, viewmodel, HUD correct: `shots/phase-b-hl2-timedemo.png`); very slow; stability being tested (Mesa patch 0003) |
+| Half-Life 2 (open stack) | ✅ slow | ToGL build on Zink/PowerVR: ~3.5 fps (desktop session), ~5 fps (KMS) |
+| **Half-Life 2 (vendor stack, phase C)** | ✅ **53 fps** | togles build on Imagination's closed GLES 3.2 + vendor kernel 6.12.5-vf2: `shots/phase-c-hl2-togles-53fps.png` |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -355,6 +356,31 @@ Findings, in order of discovery:
 Kept (fastest so far, as asked): `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
 stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.sh)**.
 
+## Phase C result: HL2 at ~53 fps on the vendor stack (2026-11-11 03:45) ✅
+
+![HL2 53 fps](shots/phase-c-hl2-togles-53fps.png)
+![HL2 in game](shots/phase-c-hl2-togles-ingame.png)
+
+`cl_showfps 1`: **53 fps on maps/d1_canals_01.bsp** at the same spot where the open stack does
+~3.5 fps (session) / ~5 fps (KMS), fullscreen 1280x720 in the KDE Plasma session. KDE itself
+composites on the closed driver too (kwin: `OpenGL ES 3.2 build 1.19@6345021`, es2gears 60 fps =
+vsync). Loading a map takes ~3-4 min the first time (the closed compiler compiles all shaders);
+a `+timedemo bench` run was therefore very slow and was stopped after 15 min (no number).
+
+What runs (board, all selectable/undoable):
+
+| Piece | Where |
+| --- | --- |
+| kernel `6.12.5-vf2` (StarFive `JH7110_VisionFive2_6.12.y_devel`, starfive_visionfive2_defconfig + Debian bits, 2 build fixes for GCC 16/make 4.4 committed in `linux-vf2-6.12/`) | `debs/linux-image-6.12.5-vf2_6.12.5-1_riscv64.deb`, boot with `board-tools/set-boot.sh 6.12.5-vf2` |
+| closed userspace DDK 1.19.6345021 + firmware + initramfs hook | `debs/img-gpu-jh7110_1.19.6345021-2_riscv64.deb` → `/opt/img-gpu`, `/lib/firmware/rgx.*` |
+| StarFive Mesa 22.1.3 (pvr DRI driver, Wayland+GBM, GLES only) | `debs/mesa-pvr-jh7110_22.1.3-1_riscv64.deb` → `/opt/mesa-pvr` (`mesa-pvr/build.sh`) |
+| session env | `~/.config/plasma-workspace/env/jh7110-mesa.sh` picks the stack by `uname -r`; for `*-vf2`: `. /opt/mesa-pvr/env.sh; MESA_LOADER_DRIVER_OVERRIDE=pvr KWIN_COMPOSE=O2ES` |
+| HL2 GLES build | `~/games/hl2-source-togles/` (from `~/code/source-engine`, `VARIANT=togles scripts/riscv64/build.sh --togles`), start: `. /opt/mesa-pvr/env.sh; MESA_LOADER_DRIVER_OVERRIDE=pvr SDL_VIDEODRIVER=wayland ./hl2_launcher -game hl2 -fullscreen -w 1280 -h 720` |
+
+Back to the open stack: `board-tools/set-boot.sh 7.4.0-rc1-jh7110` + reboot (the env files switch
+automatically). Back to stock Debian: see Rollback (now also purge `img-gpu-jh7110`,
+`mesa-pvr-jh7110`, `linux-image-6.12.5-vf2`).
+
 ## Phase C (vendor stack) — plan, started 2026-11-11 02:55
 
 Why: with the open stack HL2 is stuck at ~3.5 fps (session) / ~5 fps (KMS): the young PCO shader
@@ -436,6 +462,12 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   *Board facts*). Nothing built yet.
 - **2026-11-10**: git repo created. Display patch series identified (v7, base 7.4-rc1, needs
   PHY series + clk backport). Found that the BXE-4-32 GPU has no mainline kernel/Mesa support.
+- **2026-11-11 03:45**: ✅ **Phase C: HL2 53 fps** on the vendor stack (see *Phase C result*). Steps:
+  vendor kernel 6.12.5 (fixes: img-rogue `.SECONDARY` vs kbuild `.NOTINTERMEDIATE` on make 4.4,
+  img-rogue `-Werror` off for GCC 16, ESWIN USB WiFi driver disabled); pvrsrvkm is built in → firmware
+  via initramfs hook (img-gpu rev 2); StarFive Mesa 22.1.3 + 62 buildroot patches (one hunk of
+  0023 in `formats.csv` applied by hand; Wayland+GBM only, no X11); kwin needs `KWIN_COMPOSE=O2ES`
+  (no desktop GL) and clients need `MESA_LOADER_DRIVER_OVERRIDE=pvr`.
 - **2026-11-11 01:45**: performance investigation, see *Performance log*. The user asked to keep an
   fps list, stop very slow runs after a few minutes, and keep the debs of the fastest 7.4 kernel +
   Mesa. perf for 7.4 built: `scripts/perf/build-perf.sh` → `debs/linux-perf-jh7110_7.4.0-rc1-1_riscv64.deb`
