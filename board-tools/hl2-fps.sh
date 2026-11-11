@@ -15,7 +15,7 @@ ssh -n "$BOARD" "export XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=
 	systemd-run --user --unit=hl2 --collect -p WorkingDirectory=\$HOME/games/hl2-source-togl \
 	  -E WAYLAND_DISPLAY=wayland-0 -E XDG_RUNTIME_DIR=/run/user/1000 sh -c '. /opt/mesa-jh7110/env.sh; \
 	  export SDL_VIDEODRIVER=wayland GALLIUM_HUD=fps GALLIUM_HUD_VISIBLE=false GALLIUM_HUD_DUMP_DIR=/tmp/hud-$LABEL GALLIUM_HUD_PERIOD=1 ${HL2ENV:-}; \
-	  exec ./hl2_launcher -game hl2 -windowed $ARGS -novid +map $MAP > \$HOME/hl2-fps-$LABEL.log 2>&1' >/dev/null"
+	  exec ./hl2_launcher -game hl2 ${WINMODE:--windowed} $ARGS -novid +map $MAP > \$HOME/hl2-fps-$LABEL.log 2>&1' >/dev/null"
 sleep "$SECS"
 ssh -n "$BOARD" "XDG_RUNTIME_DIR=/run/user/1000 systemctl --user stop hl2; ls /tmp/hud-$LABEL; f=\$(ls /tmp/hud-$LABEL/* | head -1);
 	n=\$(wc -l < \$f); echo \"$LABEL: \$n samples, last: \$(tail -5 \$f | awk '{print \$NF}' | tr '\n' ' ')\";

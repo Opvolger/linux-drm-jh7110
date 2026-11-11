@@ -88,6 +88,9 @@ export VK_DRIVER_FILES=\$(ls $PREFIX/share/vulkan/icd.d/*.json | paste -sd:)
 export VK_ADD_LAYER_PATH=$PREFIX/share/vulkan/implicit_layer.d
 export PVR_I_WANT_A_BROKEN_VULKAN_DRIVER=1
 export MESA_VK_DEVICE_SELECT=1010:36054182
+# OpenGL (Zink) does not need robust buffer access; it makes every UBO load a bounds-checked
+# memory load in the PowerVR shaders (+11% HL2 fps without it).
+export PVR_NO_ROBUST_BUFFER_ACCESS=1
 # No MESA_LOADER_DRIVER_OVERRIDE: on the display card (driver "verisilicon") Mesa uses kmsro,
 # which renders with Zink on the PowerVR GPU into scanout buffers of the display. For
 # headless use of the PowerVR render node only, set MESA_LOADER_DRIVER_OVERRIDE=zink yourself.

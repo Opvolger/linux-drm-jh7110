@@ -296,7 +296,15 @@ Measured with `board-tools/hl2-fps.sh` (kwin session) or the same game run with
 | kwin, 640x480, Mesa rev 5 | ~2.5 | resolution hardly matters → not fill-rate bound |
 | KMS (no kwin), 1280x720, Mesa rev 5 | 3.8 | kwin itself costs a lot of GPU (see below) |
 | KMS, 1280x720, `+mat_queue_mode 0` | 3.8 | material system threading is not the issue |
-| KMS, 1280x720, Mesa rev 7 (SCALED vertex formats) | **4.5** | u_vbuf CPU vertex conversion gone |
+| KMS, 1280x720, Mesa rev 7 (SCALED vertex formats) | 4.5 | u_vbuf CPU vertex conversion gone |
+| KMS, 1280x720, rev 8 (64 MiB initial free list) | 4.5 | parameter buffer size is not the issue (patch 0006 dropped again) |
+| KMS, 640x480, rev 8 | 12.4 | fps scales with pixel count → fragment-shader bound |
+| KMS, 1280x720, rev 8, `+mat_picmip 2` | 4.5 | texture size/bandwidth not the issue |
+| KMS, 1280x720, rev 8, `-dxlevel 81` | 1.6 | worse (more passes); note: `-dxlevel` writes `videoconfig_linux.cfg` |
+| KMS, 1280x720, rev 9 + `PVR_NO_ROBUST_BUFFER_ACCESS=1` | **5.0** | +11%: no bounds-checked UBO loads in every shader |
+| kwin 1920x1080 desktop, HL2 window 1280x720, rev 10 (no-robust, blur/contrast off) | 1.8 | kwin + plasmashell keep the GPU busy |
+| kwin **1280x720 desktop**, HL2 windowed 1280x720, rev 10 | 2.5 | |
+| kwin **1280x720 desktop**, HL2 `-fullscreen` 1280x720, rev 10 | **3.5** (2–4.3) | best in the desktop session so far |
 
 Other measurements (Mesa rev 6/7):
 
@@ -324,11 +332,28 @@ Findings, in order of discovery:
    previous job before every submit: `pvr_clear_last_submits_syncs`). System is ~93% idle.
 4. Not the cause (tested): GPU runtime PM (`power/control=on`), CPU governor (schedutil vs performance),
    SPM scratch buffer reuse (patch 0004 kept, no measurable effect), material system threading.
-5. SDL `kmsdrm`: every page flip fails with `ENOSPC` (frames are rendered but not shown) → KMS runs are
-   only usable as measurements for now.
+5. SDL `kmsdrm`: SDL's `MODE_SETCRTC` to 1280x720 fails with EINVAL (no kernel log; modetest *can* set
+   1280x720), so every page flip of the 1280x720 buffer fails with `ENOSPC` (fb smaller than the
+   1920x1080 mode): frames are rendered but not shown → KMS runs are measurements only. One KMS
+   experiment (HL2 under strace) ended in a hang + hardware watchdog reset of the board (02:14).
+6. GPU job timing (kernel tracepoints `gpu_scheduler:drm_sched_job_run/done`, see
+   `board-tools/hl2-kms-fps.sh`): one fragment job of ~170-190 ms per HL2 frame at 720p (the main scene).
+   PCO shader stats (`PCO_DEBUG_PRINT=fs,stats`): HL2 fragment shaders are 400-1000 instruction groups
+   (robust on) / median 277, max 636 (robust off), still ~22 `ld` of constants from memory per pixel
+   (GL uniforms live in a UBO; not promoted to shared registers) → compiler work, not done.
+7. **Zink enables every supported Vulkan feature**, incl. `robustBufferAccess`, so the PowerVR
+   compiler bounds-checks every UBO/SSBO access. Mesa patch 0007 adds `PVR_NO_ROBUST_BUFFER_ACCESS`,
+   set in `/opt/mesa-jh7110/env.sh` from rev 10 on.
+8. In the KDE session, **kwin (DRM client 8) and plasmashell (client 39) render all the time**, even on
+   an idle desktop (~14 GPU jobs/s each, jobs of 100-240 ms at 1920x1080; one plasmashell window
+   re-renders every ~0.5 s). Lowering the desktop resolution to 1280x720
+   (`kscreen-doctor output.HDMI-A-1.mode.1280x720@60`, undo: `...mode.1920x1080@60`) makes es2gears go
+   from ~2.6 to 11-35 fps and HL2 fullscreen from 1.8 to ~3.5 fps.
+9. kwin blur/contrast effects disabled in `~/.config/kwinrc` (`[Plugins] blurEnabled=false,
+   contrastEnabled=false`; backup `~/.config/kwinrc.bak-jh7110`).
 
-Kept (fastest so far): `keep/` holds kernel `-2`, firmware `-2`, Mesa rev 5 (stable); Mesa rev 7 is in
-`debs/` (faster, being tested).
+Kept (fastest so far, as asked): `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
+stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.sh)**.
 
 ## Rollback to stock Debian 13
 
@@ -354,6 +379,10 @@ Everything the project changed on the board, and how to undo it by hand:
 | `~/.config/autostart/jh7110-fastfetch.desktop` | `rm` it |
 | `kwin_wayland` file capability `cap_sys_nice` removed | `sudo dpkg-reconfigure kwin-wayland` |
 | test tools installed: `libdrm-tests drm-info kmscube fastfetch mesa-utils vulkan-tools libcap2-bin` | optional: `sudo apt-get purge ...` |
+| `~/.config/kwinrc` blur/contrast disabled | `cp ~/.config/kwinrc.bak-jh7110 ~/.config/kwinrc` |
+| desktop resolution 1280x720 (kscreen) | `kscreen-doctor output.HDMI-A-1.mode.1920x1080@60` |
+| `~/games/hl2-source/hl2/videoconfig_linux.cfg` (shared with the DXVK dir via symlink) was rewritten by HL2 runs with `-dxlevel 81/95` (now DXLevel 92, mat_hdr_level 2) | check HL2's video settings in the game menu |
+| `linux-perf-jh7110`, `glmark2-es2-wayland`, `glmark2-wayland`, `gdb`/`strace` used | optional: `sudo apt-get purge linux-perf-jh7110 glmark2-es2-wayland glmark2-wayland` |
 | `~/games/hl2-source-togl/` (ToGL build, data symlinked to `~/games/hl2-source`), `~/hl2-*.log`, `~/hl2-gdb.cmd` | optional: `rm -r` |
 
 Untouched: Debian kernels (6.12.x, 6.17, 7.0, 7.1 are still installed), Debian Mesa, U-Boot, GRUB/EFI.

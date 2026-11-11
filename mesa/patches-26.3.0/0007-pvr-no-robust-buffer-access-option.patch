@@ -1,0 +1,24 @@
+Subject: [PATCH] pvr: allow disabling robust buffer access lowering (PVR_NO_ROBUST_BUFFER_ACCESS)
+
+Generated-by: LLM
+---
+--- a/src/imagination/vulkan/pvr_arch_pipeline.c
++++ b/src/imagination/vulkan/pvr_arch_pipeline.c
+@@ -56,6 +56,7 @@
+ #include "pvr_usc.h"
+ 
+ #include "util/log.h"
++#include "util/u_debug.h"
+ #include "util/macros.h"
+ #include "util/ralloc.h"
+ #include "util/shader_stats.h"
+@@ -2807,7 +2808,8 @@
+    const VkGraphicsPipelineCreateInfo *pGraphicsCreateInfo = pCreateInfo;
+ 
+    data->common.robust_buffer_access =
+-      device->vk.enabled_features.robustBufferAccess;
++      device->vk.enabled_features.robustBufferAccess &&
++      !debug_get_bool_option("PVR_NO_ROBUST_BUFFER_ACCESS", false);
+ 
+    data->common.null_descriptor = device->vk.enabled_features.nullDescriptor;
+ 
