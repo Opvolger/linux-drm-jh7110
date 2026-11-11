@@ -389,6 +389,11 @@ Notes:
 - The driver now reports **Vulkan 1.3**, but the DXVK build of HL2 still can't run: DXVK needs
   `dualSrcBlend`, which the BXE-4-32 driver does not offer (`Skipping: Device does not support
   required feature 'dualSrcBlend'`).
+- **ayie-3 = ayie-2 + later fork patches 0300-0302 (pvr/wsi fixes) and 0384-0386 (pco: one DITR per
+  shader, DITR fence replacement, select folding)**: applied with `git am --3way` (local branch
+  `try-later` in `mesa/mesa-git`) and built fine, but **hung the board 2 out of 2 times** within the
+  150 s KMS run (watchdog reset, no kernel message). Not bisected; most likely the pco changes. Board
+  is back on ayie-2.
 - One **hard hang + watchdog reset** ~40 s into the first timedemo run (no kernel message; audio had
   just started). Two later full runs and all 150 s runs were fine. A similar hang happened once with
   rev 10 (02:14), so it is not clearly caused by the fork.
@@ -617,3 +622,5 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   came back, so 0002 was ported onto the fork's dataset reuse. HL2 KMS 4.45 -> 28.5 fps, KDE
   fullscreen 3.5 -> 25.9 fps, timedemo completes (11.75 fps avg). DXVK still blocked (dualSrcBlend).
   Logs: `logs/mesa-ayie-build-*.log`, board `~/hl2-*ayie*.log`, `/tmp/hl2-kms-ayie*.log`.
+- **2026-11-11 23:05**: ayie-3 (later fork patches 0300-0302 + 0384-0386) hangs the board 2/2 on the
+  KMS run → back to ayie-2 (installed). See *Phase D result*.
