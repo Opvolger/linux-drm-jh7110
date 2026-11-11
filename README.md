@@ -433,7 +433,7 @@ Everything the project changed on the board, and how to undo it by hand:
 | `~/.config/plasma-workspace/env/jh7110-kwin.sh`, `jh7110-mesa.sh` | `rm` them |
 | `~/.config/autostart/jh7110-fastfetch.desktop` | `rm` it |
 | `kwin_wayland` file capability `cap_sys_nice` removed | `sudo dpkg-reconfigure kwin-wayland` |
-| test tools installed: `libdrm-tests drm-info kmscube fastfetch mesa-utils vulkan-tools libcap2-bin` | optional: `sudo apt-get purge ...` |
+| test tools installed: `libdrm-tests drm-info kmscube fastfetch mesa-utils vulkan-tools libcap2-bin inxi` | optional: `sudo apt-get purge ...` |
 | `~/.config/kwinrc` blur/contrast disabled | `cp ~/.config/kwinrc.bak-jh7110 ~/.config/kwinrc` |
 | desktop resolution 1280x720 (kscreen) | `kscreen-doctor output.HDMI-A-1.mode.1920x1080@60` |
 | `~/games/hl2-source/hl2/videoconfig_linux.cfg` (shared with the DXVK dir via symlink) was rewritten by HL2 runs with `-dxlevel 81/95` (now DXLevel 92, mat_hdr_level 2) | check HL2's video settings in the game menu |
@@ -563,3 +563,12 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   Review remarks on the series (sashiko AI bot) worth remembering if something breaks: HPD irq
   race in inno-hdmi after probe split; hdmi-subsystem regmap uses val_bits 8/stride 1 while the
   children do 32-bit accesses at offset*4; DT CMA alloc-ranges breaks 1 GiB boards (ours: 8 GB).
+- **2026-11-11 21:00**: Upstreaming. GitHub repo `Opvolger/linux-drm-jh7110` made public. Checked
+  Mesa `main` and open MRs/issues: none of our Mesa fixes (0001 dril/verisilicon, 0002 RT-dataset
+  sharing, 0003 dr_info double free, 0005 SCALED vertex formats) exist upstream yet. The user filed
+  a Mesa issue (own words, per Mesa's AI policy in `docs/submittingpatches.rst`) covering 0002, 0003
+  and 0005, with `inxi -GSC -xx` from 7.4.0-rc1-jh7110 and the coredump stack traces of the
+  ENOSPC abort (PID 1540) and the double-free SIGSEGV (PID 2417) from
+  `/var/lib/systemd/coredump/`. Kernel patch 0039 re-authored as bas@opvolger.net; the user adds
+  `Signed-off-by` themselves (kernel rule: AI must not add it). Board boots 7.4.0-rc1-jh7110 again;
+  `inxi` installed.
