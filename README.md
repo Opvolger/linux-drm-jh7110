@@ -30,12 +30,13 @@
 | Part | Status | Notes |
 | --- | --- | --- |
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
-| **Board boots now** | — | vendor kernel `6.12.5-vf2` (phase C). Open stack: `board-tools/set-boot.sh 7.4.0-rc1-jh7110` |
+| **Board boots now** | — | open stack `7.4.0-rc1-jh7110` (since 2026-11-11 20:39). Vendor stack: `board-tools/set-boot.sh 6.12.5-vf2` |
 | Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
-| Half-Life 2 (open stack) | ✅ slow | ToGL build on Zink/PowerVR: ~3.5 fps (desktop session), ~5 fps (KMS) |
+| Half-Life 2 (open stack) | ✅ slow | ToGL build on Zink/PowerVR, Mesa 26.3.0 rev 10: ~3.5 fps (desktop session), ~4.5–5 fps (KMS) |
+| **Half-Life 2 (open stack + PowerVR perf fork, phase D)** | ✅ **~26–28 fps** | Mesa main `9a2b374` + ayiejosh perf series + our patches (`mesa-jh7110 26.3.0~git9a2b374+ayie-2`, installed): ~28 fps KMS, ~26 fps KDE fullscreen 1280x720, timedemo 11.75 fps avg (`shots/ayie2-hl2-kwin-fs.png`) |
 | **Half-Life 2 (vendor stack, phase C)** | ✅ **18–53 fps** | togles build on Imagination's closed GLES 3.2 + vendor kernel 6.12.5-vf2: `shots/phase-c-hl2-togles-53fps.png` |
 | Rollback how-to tested | ⏳ | |
 
@@ -62,6 +63,10 @@ linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series
                           0025-0028 XPbmtUC errata (Samuel Holland ALTERNATIVE_3 + Bo Gan),
                           0029-0038 PowerVR BXE-4-32 bring-up (domibel, rebased on 7.4-rc1)
 mesa/                     Dockerfile + build.sh: Mesa cross-build -> debs/mesa-jh7110_*.deb (/opt)
+mesa/patches-26.3.0/      our patches on the 26.3.0 release (rev 1-10)
+mesa/prepare-git9a2b374.sh  phase D tree mesa/mesa-git: Mesa main 9a2b374 + fork-ayiejosh-series/
+                          (0001-0105 from github.com/ayiejosh/a733-powervr-fex) + patches-git9a2b374/;
+                          build: SRCDIR=mesa-git PKGVER=26.3.0~git9a2b374+ayie PKGREV=n mesa/build.sh
 scripts/firmware-deb.sh   debs/powervr-firmware-jh7110_*.deb (pinned BXE-4-32 firmware)
 configs/debian/           Debian config of the board (7.1.7 backports), base for our config
 scripts/kernel-tree.sh    worktree linux-7.4/ of .kernel.git (shallow, tag v7.4-rc1) + git am
@@ -354,8 +359,41 @@ Findings, in order of discovery:
 9. kwin blur/contrast effects disabled in `~/.config/kwinrc` (`[Plugins] blurEnabled=false,
    contrastEnabled=false`; backup `~/.config/kwinrc.bak-jh7110`).
 
-Kept (fastest so far, as asked): `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
+Kept (fastest so far, as asked): **phase D: `keep/mesa-jh7110_26.3.0~git9a2b374+ayie-2_riscv64.deb` is now the
+fastest open-stack Mesa (see *Phase D result*).** Before that: `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
 stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.sh)**.
+
+## Phase D result: open stack ~6x faster with the PowerVR perf fork (2026-11-11 22:40) ✅
+
+Mesa main `9a2b374` + patches 0001-0105 of the performance series of
+[ayiejosh/a733-powervr-fex](https://github.com/ayiejosh/a733-powervr-fex) (written for the BXM-4-64
+in the Allwinner A733; copied to `mesa/fork-ayiejosh-series/`, source commit in `SOURCE-COMMIT`) + our
+patches in `mesa/patches-git9a2b374/` (0001 dril/verisilicon, 0003 double free, 0005 SCALED vertex
+formats, 0007 no-robust option, and 0002 ported: one shared RT dataset per render size on top of the
+fork's dataset reuse list). Kernel unchanged (`7.4.0-rc1-jh7110`). Package
+`mesa-jh7110_26.3.0~git9a2b374+ayie-2` (installed, copy in `keep/`).
+
+| Setup (HL2 ToGL, `d1_canals_01` start, 1280x720) | fps | slowest GPU job | Notes |
+| --- | --- | --- | --- |
+| KMS, Mesa 26.3.0 rev 10 (baseline, same session) | 4.45 | 223 ms | |
+| KMS, fork rev ayie-1 (without our 0002) | — | — | `ZINK: vkEndCommandBuffer failed (VK_ERROR_INITIALIZATION_FAILED)` = FW heap ENOSPC again; the fork only reuses *freed* datasets |
+| **KMS, fork rev ayie-2** | **28.5** | **34 ms** | 6.4x rev 10 |
+| KMS, ayie-2 with robust buffer access on (`PVR_NO_ROBUST_BUFFER_ACCESS=0`) | 27.9 | 35 ms | 0007 now only ~2% (fork tests descriptors at draw time) |
+| **KDE fullscreen, desktop 1280x720, ayie-2** | **25.9** (median) | | picture correct, `shots/ayie2-hl2-kwin-fs.png` |
+| `+timedemo bench`, KDE fullscreen, ayie-2 | **11.75 avg** | | 5449 frames in 463.9 s, 2 complete runs (rev 4/5 never finished) |
+
+Notes:
+- With the fork, Zink reports OpenGL **2.1** instead of 3.2 compat: `9a2b374` predates upstream's
+  `VK_EXT_transform_feedback` for pvr (in 26.3.0). ToGL only needs 2.1 + extensions. The fork has
+  its own transform-feedback port (series 0270-0294) if GL 3.x is ever needed.
+- The driver now reports **Vulkan 1.3**, but the DXVK build of HL2 still can't run: DXVK needs
+  `dualSrcBlend`, which the BXE-4-32 driver does not offer (`Skipping: Device does not support
+  required feature 'dualSrcBlend'`).
+- One **hard hang + watchdog reset** ~40 s into the first timedemo run (no kernel message; audio had
+  just started). Two later full runs and all 150 s runs were fine. A similar hang happened once with
+  rev 10 (02:14), so it is not clearly caused by the fork.
+- `/dev/dri/renderD128` is only accessible to the user while a seat session (SDDM/KDE) is active;
+  with SDDM stopped use `sudo` (vulkaninfo then reports "Failed to detect any valid GPUs").
 
 ## Phase C result: HL2 at ~53 fps on the vendor stack (2026-11-11 03:45) ✅
 
@@ -572,3 +610,10 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   `/var/lib/systemd/coredump/`. Kernel patch 0039 re-authored as bas@opvolger.net; the user adds
   `Signed-off-by` themselves (kernel rule: AI must not add it). Board boots 7.4.0-rc1-jh7110 again;
   `inxi` installed.
+- **2026-11-11 22:40**: ✅ **Phase D: open stack ~6x faster** (see *Phase D result*). Found the
+  PowerVR performance fork ayiejosh/a733-powervr-fex (BXM-4-64); its Mesa series 0001-0105 applies
+  cleanly on Mesa main `9a2b374`. `mesa/build.sh` got `SRCDIR`/`PKGVER` (git tree, own build dirs);
+  `mesa/prepare-git9a2b374.sh` rebuilds the exact tested tree. Without our 0002 the FW heap ENOSPC
+  came back, so 0002 was ported onto the fork's dataset reuse. HL2 KMS 4.45 -> 28.5 fps, KDE
+  fullscreen 3.5 -> 25.9 fps, timedemo completes (11.75 fps avg). DXVK still blocked (dualSrcBlend).
+  Logs: `logs/mesa-ayie-build-*.log`, board `~/hl2-*ayie*.log`, `/tmp/hl2-kms-ayie*.log`.

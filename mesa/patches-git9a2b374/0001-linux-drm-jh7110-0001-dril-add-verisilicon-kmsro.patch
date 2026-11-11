@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: build <build@localhost>
+Date: Wed, 11 Nov 2026 21:58:40 +0100
+Subject: [PATCH 1/5] linux-drm-jh7110: 0001-dril-add-verisilicon-kmsro
+
+---
+ src/gallium/targets/dril/meson.build | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/gallium/targets/dril/meson.build b/src/gallium/targets/dril/meson.build
+index 55f10dc7805..721cb4d7e09 100644
+--- a/src/gallium/targets/dril/meson.build
++++ b/src/gallium/targets/dril/meson.build
+@@ -98,6 +98,7 @@ foreach d : [[with_gallium_kmsro, [
+                'stm',
+                'sun4i-drm',
+                'udl',
++               'verisilicon',
+                'vkms',
+                'zynqmp-dpsub',
+              ]],
