@@ -6,3 +6,4 @@ shots/*.log
 /debs/
 /logs/
 *.deb
+/vendor/

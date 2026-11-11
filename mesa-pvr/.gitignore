@@ -1,0 +1,4 @@
+/mesa-*/
+/build/
+*.tar.xz
+cross-riscv64.ini
