@@ -355,6 +355,29 @@ Findings, in order of discovery:
 Kept (fastest so far, as asked): `keep/` holds kernel `7.4.0-rc1-2`, firmware `-2`, Mesa rev 5 (first
 stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.sh)**.
 
+## Phase C (vendor stack) — plan, started 2026-11-11 02:55
+
+Why: with the open stack HL2 is stuck at ~3.5 fps (session) / ~5 fps (KMS): the young PCO shader
+compiler makes HL2 fragment shaders 10-20x bigger than the originals, and kwin/plasmashell eat GPU
+time. Imagination's closed driver has a mature compiler. The open stack stays installed; the vendor
+stack is added next to it and selected with `board-tools/set-boot.sh <release>`.
+
+Pieces (all to be kept out of Debian's paths, so the rollback stays simple):
+
+1. **Kernel**: github.com/starfive-tech/linux branch `JH7110_VisionFive2_6.12.y_devel` (tag
+   `JH7110_VF2_6.12_v6.0.0`, commit 4cecf169), fetched into `.kernel.git` as `starfive/vf2-6.12`.
+   Needs the img-rogue `pvrsrvkm` driver (1.19) + vendor display driver; build as a .deb with the
+   Debian config like our 7.4 kernel.
+2. **GPU userspace blobs**: github.com/starfive-tech/soft_3rdpart `IMG_GPU/out/img-gpu-powervr-bin-1.19.6345021.tar.gz`
+   (GLES1/2/3, Vulkan `libVK_IMG`, OpenCL, `libsrv_um`, `libpvr_dri_support`, firmware). Install into
+   `/opt/img-gpu` (NOT /usr/lib: Debian's glvnd libGLESv2 would be overwritten).
+3. **Vendor Mesa**: StarFive buildroot `package/mesa3d` = Mesa **22.1.3** + ~60 patches incl.
+   `0001-Add-PVR-Gallium-driver.patch` (pvr DRI driver on top of libpvr_dri_support) → EGL/GBM/Wayland
+   for kwin and GLES for apps. Cross-build in the mesa docker image → `/opt/mesa-pvr`.
+4. **HL2 with the GLES backend**: the source-engine fork has `--togles`; build started 02:50:
+   `VARIANT=togles scripts/riscv64/build.sh --togles` → `~/code/source-engine/install-riscv64-togles/`.
+   Can also be tested on the open stack (Zink GLES 3.1) as a comparison.
+
 ## Rollback to stock Debian 13
 
 Debian's own Mesa packages (trixie-backports 25.2.6) were **never replaced**: our Mesa lives in
