@@ -30,12 +30,13 @@
 | Part | Status | Notes |
 | --- | --- | --- |
 | Board reachable (SSH/serial/power) | ✅ | Debian 13.7, running Debian kernel `6.12.74+deb13+1` |
+| **Board boots now** | — | vendor kernel `6.12.5-vf2` (phase C). Open stack: `board-tools/set-boot.sh 7.4.0-rc1-jh7110` |
 | Kernel 7.4-rc1 + patches | ✅ | `7.4.0-rc1-jh7110` boots, `debs/linux-image-7.4.0-rc1-jh7110_7.4.0-rc1-1_riscv64.deb` |
 | Display (DC8200 + HDMI) via DRM/KMS | ✅ | fbcon + KDE Plasma Wayland at 1920x1080@60 (llvmpipe), see `shots/phase-a-kde-fastfetch-llvmpipe.png` |
 | GPU (IMG BXE-4-32, `drm/imagination`) | ✅ | FW v1.1 boots, `renderD128`; Vulkan 1.2 (`vulkaninfo`) |
 | Mesa (PowerVR Vulkan + Zink) | ✅ | Mesa 26.3.0 in /opt; KDE (kwin) composites with "zink Vulkan 1.2 (PowerVR BXE-4-32)", see `shots/phase-b-kde-fastfetch-powervr.png` |
 | Half-Life 2 (open stack) | ✅ slow | ToGL build on Zink/PowerVR: ~3.5 fps (desktop session), ~5 fps (KMS) |
-| **Half-Life 2 (vendor stack, phase C)** | ✅ **53 fps** | togles build on Imagination's closed GLES 3.2 + vendor kernel 6.12.5-vf2: `shots/phase-c-hl2-togles-53fps.png` |
+| **Half-Life 2 (vendor stack, phase C)** | ✅ **18–53 fps** | togles build on Imagination's closed GLES 3.2 + vendor kernel 6.12.5-vf2: `shots/phase-c-hl2-togles-53fps.png` |
 | Rollback how-to tested | ⏳ | |
 
 ## Plan
@@ -361,6 +362,11 @@ stable) and **Mesa rev 10 (fastest: patches 0001-0005 + 0007, no-robust in env.s
 ![HL2 53 fps](shots/phase-c-hl2-togles-53fps.png)
 ![HL2 in game](shots/phase-c-hl2-togles-ingame.png)
 
+Second map `d1_canals_02` (tunnel looking out to a lit area): **18 fps**
+(`shots/phase-c-hl2-canals02.png`); its first load took ~7 min (shader compilation).
+App menu: "Half-Life 2 (PowerVR GLES, vendor kernel)" → `~/games/hl2-source-togles/run-hl2.sh`
+(refuses to start on another kernel).
+
 `cl_showfps 1`: **53 fps on maps/d1_canals_01.bsp** at the same spot where the open stack does
 ~3.5 fps (session) / ~5 fps (KMS), fullscreen 1280x720 in the KDE Plasma session. KDE itself
 composites on the closed driver too (kwin: `OpenGL ES 3.2 build 1.19@6345021`, es2gears 60 fps =
@@ -438,9 +444,16 @@ Untouched: Debian kernels (6.12.x, 6.17, 7.0, 7.1 are still installed), Debian M
 
 Rollback **tested**: not yet (see Plan step 8).
 
-## Open questions
+## Open questions / possible next steps
 
-(none open)
+- Open stack (mainline): kwin's atomic modeset test fails with EINVAL on the verisilicon driver
+  (workaround `KWIN_DRM_NO_AMS=1`, which also blocks direct scanout); SDL kmsdrm can't set 1280x720
+  (`MODE_SETCRTC` EINVAL); PCO keeps GL uniforms in memory (~22 loads per pixel); kernel patch 0039
+  (dw-axi-dmac log level) is committed but not built yet.
+- Vendor stack: first map loads are slow (shader compiles; check whether the closed driver can keep
+  a shader cache); HL2 picture looks darker than on Zink (gamma/sRGB in togles?); glmark2-es2-wayland
+  finds no EGL config; `rgx` firmware postinst rebuilds all 9 initramfs images (slow, ~10 min).
+- Rollback script not tested end-to-end yet (Plan step 8).
 
 ## Decisions (user, 2026-11-10)
 
