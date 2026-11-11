@@ -7,7 +7,8 @@
 #
 # What it undoes (see "Rollback to stock Debian 13" in jh7110-drm-to-debian-13.md):
 #   boot.scr -> Debian 6.12.74 kernel, original /boot.cmd restored
-#   packages: linux-image-7.4.0-rc1-jh7110, mesa-jh7110, powervr-firmware-jh7110
+#   packages: linux-image-7.4.0-rc1-jh7110, mesa-jh7110, powervr-firmware-jh7110,
+#             linux-image-6.12.5-vf2, img-gpu-jh7110, mesa-pvr-jh7110 (phase C)
 #   config: /etc/sddm.conf.d/50-jh7110.conf, /etc/sysctl.d/50-jh7110-printk.conf,
 #           ~/.config/plasma-workspace/env/jh7110-*.sh, ~/.config/autostart/jh7110-fastfetch.desktop
 #   kwin_wayland file capability (cap_sys_nice) restored via dpkg-reconfigure kwin-wayland
@@ -39,10 +40,11 @@ run "test -f /boot.scr.bak-$STOCK && sudo cp /boot.scr.bak-$STOCK /boot.scr && d
 
 # 2. user/session configuration
 run "sudo rm -f /etc/sddm.conf.d/50-jh7110.conf /etc/sysctl.d/50-jh7110-printk.conf"
+run "test -f ~/.config/kwinrc.bak-jh7110 && cp ~/.config/kwinrc.bak-jh7110 ~/.config/kwinrc; true"
 run "rm -f ~/.config/plasma-workspace/env/jh7110-kwin.sh ~/.config/plasma-workspace/env/jh7110-mesa.sh ~/.config/autostart/jh7110-fastfetch.desktop"
 
 # 3. packages (firmware postrm rebuilds the initramfs of all kernels without the firmware)
-run "sudo apt-get purge -y mesa-jh7110 powervr-firmware-jh7110 linux-image-7.4.0-rc1-jh7110"
+run "sudo apt-get purge -y mesa-jh7110 powervr-firmware-jh7110 linux-image-7.4.0-rc1-jh7110 mesa-pvr-jh7110 img-gpu-jh7110 linux-image-6.12.5-vf2"
 
 # 4. kwin_wayland gets its cap_sys_nice back (the package postinst sets it)
 run "sudo dpkg-reconfigure kwin-wayland && /usr/sbin/getcap /usr/bin/kwin_wayland"
