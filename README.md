@@ -682,3 +682,7 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   identical (`shots/zink-fix-before-ayie2.png`, `shots/zink-fix-after-ayie4.png`, 0 pixels differ).
   Timedemo ayie-4 (HDMI audio on): **5449 frames in 446.2 s = 12.2 fps**, same as ayie-2 (446.9 s),
   no hang. So no change for HL2; kept for correctness (it fixes glmark2 shadow/refract).
+- **2026-11-14 18:15**: HL2 at **640x480**, KDE fullscreen, `d1_canals_01`, Mesa ayie-4: **53.10 fps**
+  (median, stable 53.2-53.4) vs 27.09 fps at 1280x720 → still GPU (fill-rate) bound. A first run
+  (27.76, unstable) was invalid: the KDE lock screen was on; the user unlocked and disabled autolock
+  on the board (`~/.config/kscreenlockerrc`, user's own change).
