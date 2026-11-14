@@ -686,3 +686,13 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   (median, stable 53.2-53.4) vs 27.09 fps at 1280x720 → still GPU (fill-rate) bound. A first run
   (27.76, unstable) was invalid: the KDE lock screen was on; the user unlocked and disabled autolock
   on the board (`~/.config/kscreenlockerrc`, user's own change).
+- **2026-11-14 18:05-19:05**: ❌ **Repeated hard resets** in the KDE session (open stack, display on,
+  autolock off): boots lasted 32, 3, 5 min with ayie-4, then 18 and 2 min after going back to ayie-2;
+  no HL2 running in most of them. Serial console (`logs/serial-hang-1811.log`, console loglevel 8)
+  shows **nothing** before the reset: login prompt → U-Boot SPL. The StarFive watchdog is
+  `inactive` and systemd's RuntimeWatchdog is 0, so it is not a watchdog reset; journal loses the
+  last seconds. Nothing changed in dpkg//etc//boot since the 2-day stable boot (12-14 Nov), power
+  stayed on (user), CPU ~44 °C. **Test:** same kernel, KDE on Debian Mesa/llvmpipe
+  (`jh7110-mesa.sh` moved away, PowerVR unused): **stable 25+ min** (slow). → points to the GPU path
+  under constant use (our Mesa fork or the powervr kernel driver); the zink fix (ayie-4) is not the
+  cause. Not isolated further (next: Mesa 26.3.0 rev 10 without the fork). Board back on ayie-4.
