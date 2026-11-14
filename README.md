@@ -67,7 +67,8 @@ linux-7.4-patches/        0001-0005 HDMI PHY series v7, 0006-0024 display series
 mesa/                     Dockerfile + build.sh: Mesa cross-build -> debs/mesa-jh7110_*.deb (/opt)
 mesa/patches-26.3.0/      our patches on the 26.3.0 release (rev 1-10)
 mesa/prepare-git9a2b374.sh  phase D tree mesa/mesa-git: Mesa main 9a2b374 + fork-ayiejosh-series/
-                          (0001-0105 from github.com/ayiejosh/a733-powervr-fex) + patches-git9a2b374/;
+                          (0001-0105 from github.com/ayiejosh/a733-powervr-fex) + patches-git9a2b374/
+                          (0006 = upstream zink fix 2f42570a92c, from ayie-4);
                           build: SRCDIR=mesa-git PKGVER=26.3.0~git9a2b374+ayie PKGREV=n mesa/build.sh
 scripts/firmware-deb.sh   debs/powervr-firmware-jh7110_*.deb (pinned BXE-4-32 firmware)
 configs/debian/           Debian config of the board (7.1.7 backports), base for our config
@@ -670,3 +671,14 @@ Newest entry at the bottom. Per entry: date, what was tried, result (✅/❌), w
   KMS run → back to ayie-2 (installed). See *Phase D result*.
 - **2026-11-12 00:35**: ✅ **Phase E: HDMI audio** (see *Phase E result*). Kernel `7.4.0-rc1-3`
   (0039 dmac log level is in it too) installed; board root fs is at **97 %** (2 GB free).
+- **2026-11-14 17:50**: Checked domibel's Mesa work (gitlab.freedesktop.org MRs by `domibel`; his
+  bring-up repo has no Mesa patches). Only relevant one: the upstream Zink fix for his issue #16742,
+  !45986 (`2f42570a92c` "zink: reset attachment storeOp when begin_rendering has no tc info"): its
+  regressor `73528dd3b70` is in `9a2b374`, the fix is not. Added as
+  `mesa/patches-git9a2b374/0006-zink-reset-attachment-storeOp-...patch` → `mesa-jh7110
+  26.3.0~git9a2b374+ayie-4` (installed; `ayie-3` was already taken by the hanging build). His other
+  merged MRs (!45098, !45096, !44065) are compute-only, not used by HL2/ToGL. Result, same session,
+  KDE fullscreen 1280x720 `d1_canals_01`: ayie-2 **27.08** fps vs ayie-4 **27.09** fps, screenshots
+  identical (`shots/zink-fix-before-ayie2.png`, `shots/zink-fix-after-ayie4.png`, 0 pixels differ).
+  Timedemo ayie-4 (HDMI audio on): **5449 frames in 446.2 s = 12.2 fps**, same as ayie-2 (446.9 s),
+  no hang. So no change for HL2; kept for correctness (it fixes glmark2 shadow/refract).
